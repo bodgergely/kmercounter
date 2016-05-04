@@ -201,7 +201,7 @@ public:
 	void process(vector<pair<string, size_t>>& results)
 	{
 		for(int i=0;i<_threads.size();i++)
-			_threads[i] = std::thread(&KmerCounter::process, _counters[i]);
+			_threads[i] = std::thread(&KmerCounter::process, std::ref(_counters[i]));
 
 		for(int i=0;i<_threads.size();i++)
 			_threads[i].join();
