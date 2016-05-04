@@ -193,15 +193,14 @@ public:
 		for(int i=0;i<numOfThreads;i++)
 		{
 			_counters.push_back(KmerCounter(input.c_str(), input.c_str()+input.size(), k, n, hc));
-			_threads.push_back(std::thread());
 		}
 	}
 
 	// TODO maybe we want this to be async?
 	void process(vector<pair<string, size_t>>& results)
 	{
-		for(int i=0;i<_threads.size();i++)
-			_threads[i] = std::thread(&KmerCounter::process, std::ref(_counters[i]));
+		for(int i=0;i<_counters.size();i++)
+			_threads.push_back(std::thread(&KmerCounter::process, std::ref(_counters[i])));
 
 		for(int i=0;i<_threads.size();i++)
 			_threads[i].join();
