@@ -19,6 +19,14 @@
 #include <utility>
 #include <algorithm>
 #include <thread>
+#include <iterator>
+
+
+
+#ifdef _DEBUG
+#include <iostream>
+using namespace std;
+#endif
 
 namespace sevenbridges
 {
@@ -131,15 +139,16 @@ public:
 
 	void getTopStrings(vector<pair<string,size_t> >& out) const
 	{
-		int i=0;
+		// TODO refactor - extract method below
+		int count=0;
 		size_t prevSize = 0;
-		while(i<_n && i < _sortedMems.size())
+		for(int i=0;count<_n && i < _sortedMems.size();i++)
 		{
 			const auto& tmp = _sortedMems[i];
 			string s = string(tmp.first.begin(), tmp.first.end() - tmp.first.begin());
 			out.push_back(std::make_pair(s, tmp.second));
 			if(prevSize!=tmp.second)
-				i++;
+				count++;
 			prevSize = tmp.second;
 		}
 	}
@@ -221,7 +230,7 @@ protected:
 		{
 			vector<pair<string, size_t>> tmp;
 			km.getTopStrings(tmp);
-			all.insert(all.end()-1,tmp.begin(), tmp.end());
+			std::copy(tmp.begin(),tmp.end(), back_inserter(all));
 		}
 		std::sort(all.begin(), all.end(), [](const pair<string, size_t>& lhs, const pair<string, size_t>& rhs)
 											{
@@ -231,14 +240,14 @@ protected:
 													return false;
 											});
 		// TODO refactor - extract method below
-		int i=0;
+		int count=0;
 		size_t prevSize = 0;
-		while(i<_n && i < all.size())
+		for(int i =0;count<_n && i < all.size();i++)
 		{
 			const auto& tmp = all[i];
 			results.push_back(tmp);
 			if(prevSize!=tmp.second)
-				i++;
+				count++;
 			prevSize = tmp.second;
 		}
 	}
