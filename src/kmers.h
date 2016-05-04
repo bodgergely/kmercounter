@@ -28,7 +28,7 @@
 using namespace std;
 #endif
 
-namespace sevenbridges
+namespace kmers
 {
 
 using std::list;

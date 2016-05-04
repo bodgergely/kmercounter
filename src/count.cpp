@@ -12,7 +12,7 @@
 #include <utility>
 #include <string>
 
-using sevenbridges::KmerProcessor;
+using kmers::KmerProcessor;
 using namespace std;
 
 int main(int argc, char** argv)
