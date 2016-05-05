@@ -5,7 +5,7 @@
  *      Author: geri
  */
 
-#include <kmers.h>
+#include <KmerProcessor.h>
 
 #include <iostream>
 #include <vector>
