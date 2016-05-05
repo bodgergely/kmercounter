@@ -81,6 +81,8 @@ public:
 	const char* begin() const {return _begin;}
 	const char* end() const {return _end;}
 
+	string toString() const { return string(_begin, _end-_begin);}
+
 	size_t getHash() const {return _hash;}
 
 	class Hash
@@ -179,6 +181,9 @@ private:
 																	return false;
 															});
 	}
+
+
+
 
 private:
 	const char* _begin;
