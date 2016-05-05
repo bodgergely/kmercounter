@@ -118,7 +118,7 @@ private:
 		}
 		// wait for it to finish
 		_counters.front()->threadHandle().join();
-		KmerCounterThreadedPtr& kc = _counters.front();void
+		KmerCounterThreadedPtr& kc = _counters.front();
 		populateTopStrings(kc);
 
 		_counters.pop_front();
