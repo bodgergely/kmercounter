@@ -21,6 +21,7 @@
 #include <thread>
 #include <iterator>
 #include <cassert>
+#include <thread>
 
 #define _DEBUG
 
@@ -38,7 +39,8 @@ using std::string;
 using std::vector;
 using std::set;
 using std::map;
-using std::multimap;
+using std::thread;
+
 
 class Buffer
 {
@@ -108,7 +110,7 @@ private:
 		while (str!=_end)
 		{
 			c = *str;
-			hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+			hash = ((hash << 5) + hash) + c;
 			++str;
 		}
 
@@ -139,7 +141,12 @@ public:
 		_sortedMems.reserve(end-begin);
 	}
 
-	void process()
+	virtual ~KmerCounter()
+	{
+
+	}
+
+	virtual void process()
 	{
 		count();
 		extractTopStrings();
@@ -165,7 +172,7 @@ public:
 		}
 	}
 
-private:
+protected:
 	void count()
 	{
 		for(const char* curr = _begin; curr+_k<=_end; curr++)
@@ -199,7 +206,7 @@ private:
 
 
 
-private:
+protected:
 	const char* _begin;
 	const char* _end;		// not included (C++ iterator style range)
 	size_t	_totalLen;
@@ -212,6 +219,45 @@ private:
 
 
 
+class KmerCounterThreaded : public KmerCounter
+{
+public:
+	KmerCounterThreaded(const char* begin, const char* end, size_t k, size_t n, const HashTableConfig& config, bool startOnConstruction) :
+																					KmerCounter(begin, end, k, n, config),
+																					_startOnConstruction(startOnConstruction)
+	{
+
+	}
+
+	~KmerCounterThreaded()
+	{
+
+	}
+
+	thread&		threadHandle() {return _processingThread;}
+
+	void start()
+	{
+		_processingThread = thread(&KmerCounterThreaded::process, this);
+	}
+
+protected:
+	virtual void process()
+	{
+		if(!_startOnConstruction)
+		{
+			KmerCounter::process();
+			_finished.store(true);
+		}
+		else
+			throw std::exception("Already started in constructor!");
+	}
+
+protected:
+	thread _processingThread;
+	bool _startOnConstruction;
+	atomic<bool> _finished = false;
+};
 
 
 
