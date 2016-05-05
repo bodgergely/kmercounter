@@ -20,8 +20,9 @@
 #include <algorithm>
 #include <thread>
 #include <iterator>
+#include <cassert>
 
-
+#define _DEBUG
 
 #ifdef _DEBUG
 #include <iostream>
@@ -68,9 +69,13 @@ public:
 	inline bool operator==(const Memory& other) const
 	{
 		if(!memcmp(_begin, other._begin, _len))
+		{
 			return true;
+		}
 		else
+		{
 			return false;
+		}
 	}
 	inline bool operator!=(const Memory& other)
 	{
@@ -83,14 +88,14 @@ public:
 
 	string toString() const { return string(_begin, _end-_begin);}
 
-	size_t getHash() const {return _hash;}
+	size_t hash() const {return _hash;}
 
 	class Hash
 	{
 	public:
 		size_t operator()(const Memory& mem) const
 		{
-			return mem.getHash();
+			return mem.hash();
 		}
 	};
 
@@ -100,8 +105,9 @@ private:
 		size_t hash = 5381;
 		char c;
 		const char* str = _begin;
-		while (c = *str && str!=_end)
+		while (str!=_end)
 		{
+			c = *str;
 			hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
 			++str;
 		}
@@ -158,7 +164,7 @@ public:
 private:
 	void count()
 	{
-		for(const char* curr = _begin; curr!=_end; curr++)
+		for(const char* curr = _begin; curr+_k<=_end; curr++)
 		{
 			Memory mem(curr, curr+_k);
 			++_stringMap[mem];
@@ -167,11 +173,15 @@ private:
 
 	void extractTopStrings()
 	{
+		unsigned long long totalCount = 0;
 		for(HashMap::iterator it=_stringMap.begin(); it!=_stringMap.end(); )
 		{
+			totalCount+=it->second;
 			_sortedMems.push_back(*it);
 			it = _stringMap.erase(it);
 		}
+
+		assert(totalCount == _totalLen-_k+1);
 
 		std::sort(_sortedMems.begin(), _sortedMems.end(), [](const pair<Memory, size_t>& lhs, const pair<Memory, size_t>& rhs)
 															{
