@@ -49,7 +49,9 @@ public:
 	{
 		size_t blksize = _fileReader.blocksize();
 		size_t  filesize = _fileReader.filesize();
-		_numOfBlocks = filesize / blksize + 1;
+		_numOfBlocks = filesize / blksize+1;
+		if(filesize%blksize == 0)
+			_numOfBlocks--;
 		_hashTableConfig = HashTableConfigPtr(new HashTableConfig(blksize/10, 12));
 	}
 
