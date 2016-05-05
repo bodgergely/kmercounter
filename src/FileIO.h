@@ -2,7 +2,7 @@
 #define FILEIO_H_
 
 #include <string>
-#include <ifstream>
+#include <fstream>
 #include <thread>
 #include <atomic>
 #include <condition_variable>
@@ -17,7 +17,7 @@ using std::string;
 using std::ifstream;
 using std::thread;
 using std::unique_ptr;
-using std:queue;
+using std::queue;
 using std::mutex;
 
 class InputBuffer
@@ -27,14 +27,14 @@ public:
 	{
 	}
 	
-	InputBuffer(const char* buffer, size_t len) : _buffer, _allocated(len), _len(len)
+	InputBuffer(const char* buffer, size_t len) : _buffer(buffer), _allocated(len), _len(len)
 	{	
 	}
 	
 	inline char* getBuffer() const {return _buffer.get();}
 	inline size_t 	   getLen()	const {return _len;}
 	inline void		   setLen(size_t len) {_len = len;}
-	inline size_t		getAllocSize const {return _allocated;}
+	inline size_t	   getAllocSize() const {return _allocated;}
 	
 	
 	~InputBuffer()
@@ -80,7 +80,7 @@ protected:
 		}
 		else
 		{
-			bytesRead.setLen(_stream.gcount());
+			buf.setLen(_stream.gcount());
 		}
 		
 		return buf;
