@@ -1,8 +1,10 @@
-#ifndef KMERPROCESSOR_H_
-#define KMERPROCESSOR_H_
+#ifndef KMERENGINE_H_
+#define KMERENGINE_H_
 
 #include <KmerProcessor.h>
 #include <FileIO.h>
+
+using io::FileReader;
 
 namespace kmers
 {
@@ -19,7 +21,7 @@ private:
 	size_t _k;
 	size_t _n;
 	size_t _threadCount;
-	FileIO _fileio;
+	FileReader _fileio;
 };
 
 
