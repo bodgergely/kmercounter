@@ -17,7 +17,9 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-	KmerProcessor processor("abcbdefdfdf", 3, 10, 1);
+	char* input = (char*)malloc(12 * sizeof(char));
+	strcpy(input, "abcbdefdfdf");
+	KmerProcessor processor(input,11,3, 10, 1);
 
 	vector<pair<string, size_t>> results;
 	processor.process(results);

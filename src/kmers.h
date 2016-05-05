@@ -211,12 +211,12 @@ private:
 class KmerProcessor
 {
 public:
-	KmerProcessor(const string& input, int k, int n, int numOfThreads) : _processingDone(false), _k(k), _n(n), _numOfThreads(numOfThreads)
+	KmerProcessor(const char* begin, size_t inputSize, int k, int n, int numOfThreads) : _begin(begin), _inputSize(inputSize), _processingDone(false), _k(k), _n(n), _numOfThreads(numOfThreads)
 	{
 		HashTableConfig hc(1000, 15);
 		for(int i=0;i<numOfThreads;i++)
 		{
-			_counters.push_back(KmerCounter(input.c_str(), input.c_str()+input.size(), k, n, hc));
+			_counters.push_back(KmerCounter(begin, begin+inputSize, k, n, hc));
 		}
 	}
 
@@ -268,6 +268,8 @@ protected:
 	}
 
 protected:
+	const char*			_begin;
+	size_t				_inputSize;
 	int					_k;
 	int					_n;
 	int					_numOfThreads;
