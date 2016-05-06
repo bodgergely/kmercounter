@@ -126,21 +126,63 @@ private:
 };
 
 
+class Chunk
+{
+public:
+	Chunk(const char* begin, const char* end) : _begin(begin), _end(end) {}
+	const char* begin() const {return _begin;}
+	const char* end() const {return _end;}
+private:
+	const char* _begin;
+	const char* _end;	// not included (C++ iterator style range)
+};
+
+
+/*
+	 * k: kmer length
+	 * creates contiguous memory from the crossings between the two chunks which depends on the kmer length (k)
+	 * return a pointer to the allocated memory - the client needs to free it!
+	 * assumes that k is smaller than the chunk length!
+	 */
+Chunk createCrossMemorySection(const Chunk& chunk1, const Chunk& chunk2, int k)
+{
+	char* mem = new char[ k-1 + k-1];		// the crossing section has k-1 elements from both chunks
+	const char* start = chunk1.end() - k + 1;
+	memcpy(mem, start, k-1);		// copy the remainder from the first chunk
+	memcpy(mem+k-1, chunk2.begin(), k-1); // copy the first k-1 from the second chunk
+
+	return Chunk(mem, mem+2*(k-1));
+
+}
+
+/*
+ * this one can compare only contiguous memory
+ */
 class KmerCounter
 {
 	using HashMap = std::unordered_map<Memory, size_t, Memory::Hash>;
 public:
-	KmerCounter(const char* begin, const char* end, size_t k, size_t n, const HashTableConfig& config) :
-																			_begin(begin),
-																			_end(end),
-																			_totalLen(_end-_begin),
+	KmerCounter(Chunk chunk, size_t k, size_t n, const HashTableConfig& config) :
+																			_chunk1(chunk),
+																			_chunk2(NULL, NULL),
+																			_hasTwoChunks(false),
+																			_totalLen(chunk.end()-chunk.begin()),
 																			_k(k),
 																			_n(n),
 																			_hashConfig(config)
 	{
-		_stringMap.reserve(_hashConfig.initialSize);
-		_stringMap.max_load_factor(_hashConfig.maxLoadFactor);
-		_sortedMems.reserve(end-begin);
+		init();
+	}
+
+	KmerCounter(Chunk chunk1, Chunk chunk2, size_t k, size_t n, const HashTableConfig& config) : _chunk1(chunk1),
+																								 _chunk2(chunk2),
+																								 _hasTwoChunks(true),
+																								 _totalLen(chunk1.end()-chunk1.begin() + k-1),
+																								 _k(k),
+																								 _n(n),
+																								 _hashConfig(config)
+	{
+		init();
 	}
 
 	virtual ~KmerCounter()
@@ -175,13 +217,48 @@ public:
 	}
 
 protected:
+	void init()
+	{
+		_stringMap.reserve(_hashConfig.initialSize);
+		_stringMap.max_load_factor(_hashConfig.maxLoadFactor);
+		_sortedMems.reserve(_chunk1.end()-_chunk1.begin());
+	}
+
 	void count()
 	{
-		for(const char* curr = _begin; curr+_k<=_end; curr++)
+		if(_hasTwoChunks)
+		{
+			countInTwoChunk();
+		}
+		else
+		{
+			countInOneChunk();
+		}
+	}
+
+
+	void countInOneChunk()
+	{
+		for(const char* curr = _chunk1.begin(); curr+_k<=_chunk1.end(); curr++)
 		{
 			Memory mem(curr, curr+_k);
 			++_stringMap[mem];
 		}
+	}
+
+	void countInTwoChunk()
+	{
+		// first deal with the first chunk alone
+		const char* curr = _chunk1.begin();
+		for( ;curr+_k<=_chunk1.end(); curr++)
+		{
+			Memory mem(curr, curr+_k);
+			++_stringMap[mem];
+		}
+		// deal with the crossing into the second chunk -- this is tricky (and annoying) - since k is assumed to be much smaller than the chunk size: need to create contiguous memory from the two (malloc? then free later)
+		// we own! chunk! will have to free later (when is later? once we created the strings from under these raw char pointers -> then we can get rid of the memory)
+		Chunk crossing = createCrossMemorySection(_chunk1, _chunk2, _k);
+
 	}
 
 	void extractTopStrings()
@@ -209,8 +286,9 @@ protected:
 
 
 protected:
-	const char* _begin;
-	const char* _end;		// not included (C++ iterator style range)
+	Chunk	_chunk1;
+	Chunk	_chunk2;
+	bool	_hasTwoChunks;
 	size_t	_totalLen;
 	size_t _k;
 	size_t _n;
@@ -224,10 +302,20 @@ protected:
 class KmerCounterThreaded : public KmerCounter
 {
 public:
-	KmerCounterThreaded(const char* begin, const char* end, size_t k, size_t n, const HashTableConfig& config, bool startOnConstruction) :
-																					KmerCounter(begin, end, k, n, config),
+	KmerCounterThreaded(Chunk chunk1, size_t k, size_t n, const HashTableConfig& config, bool startOnConstruction) :
+																					KmerCounter(chunk1, k, n, config),
 																					_startOnConstruction(startOnConstruction),
 																					_finished(false)
+
+	{
+		if(_startOnConstruction)
+			kickoff();
+	}
+
+	KmerCounterThreaded(Chunk chunk1, Chunk chunk2, size_t k, size_t n, const HashTableConfig& config, bool startOnConstruction) :
+																						KmerCounter(chunk1, chunk2, k, n, config),
+																						_startOnConstruction(startOnConstruction),
+																						_finished(false)
 
 	{
 		if(_startOnConstruction)

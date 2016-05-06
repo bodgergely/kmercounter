@@ -17,6 +17,7 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
+
 	string file = string(argv[1]);
 	int k = atoi(argv[2]);
 	int n = atoi(argv[3]);

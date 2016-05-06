@@ -8,6 +8,7 @@
 using io::FileReader;
 using io::InputBuffer;
 using std::unique_ptr;
+using kmers::Chunk;
 
 namespace kmers
 {
@@ -94,7 +95,7 @@ private:
 		const char* end = begin + buffer.getLen();
 		while(_counters.size()>=_maxThreadedCounters)
 			_condvarOnCounterSize.wait(lock);
-		_counters.push_back(KmerCounterThreadedPtr(new KmerCounterThreaded(begin, end, _k, _n, *_hashTableConfig, true)));
+		_counters.push_back(KmerCounterThreadedPtr(new KmerCounterThreaded(Chunk(begin, end), _k, _n, *_hashTableConfig, true)));
 		_condvarOnCounterSize.notify_one();
 	}
 
