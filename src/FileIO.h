@@ -75,7 +75,7 @@ public:
 	 */
 	void startReadingBlocks()
 	{
-		_ioThread = thread(&FileReader::readNextBlock, this);
+		_ioThread = thread(&FileReader::doRead, this);
 	}
 
 	void getNextBlock(InputBuffer& buffer)
