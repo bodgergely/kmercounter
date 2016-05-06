@@ -253,8 +253,10 @@ protected:
 	void extractTopStrings()
 	{
 		unsigned long long totalCount = 0;
+		int hashmapCount=0;
 		for(HashMap::iterator it=_stringMap.begin(); it!=_stringMap.end(); )
 		{
+			hashmapCount++;
 			totalCount+=it->second;
 			_sortedMems.push_back(*it);
 			it = _stringMap.erase(it);
@@ -262,6 +264,9 @@ protected:
 
 		assert(totalCount == _totalLen-_k+1);
 
+		cout << "hashmap count: " << hashmapCount << "\n";
+
+		// TODO this sort taking very long for some reason!
 		std::sort(_sortedMems.begin(), _sortedMems.end(), [](const pair<Memory, size_t>& lhs, const pair<Memory, size_t>& rhs)
 															{
 																if(lhs.second >= rhs.second)
@@ -269,6 +274,8 @@ protected:
 																else
 																	return false;
 															});
+
+
 	}
 
 

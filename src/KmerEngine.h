@@ -190,7 +190,7 @@ private:
 	void populateTopStrings(const KmerCounterThreadedPtr& kc)
 	{
 		vector<pair<string, size_t>> res;
-		kc->getTopStrings(res);
+		//kc->getTopStrings(res);
 		_resultCollector.insert(res);
 	}
 

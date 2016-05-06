@@ -19,18 +19,21 @@ int main(int argc, char** argv)
 {
 
 	string file = string(argv[1]);
-	int k = atoi(argv[2]);
-	int n = atoi(argv[3]);
+	int n = atoi(argv[2]);
+	int k = atoi(argv[3]);
 	int threadCount = 4;
 
 	KmerEngine engine(file, k, n, threadCount);
 	engine.start();
 	vector<pair<string, size_t>> results = engine.getResults();
 
+	cout << "Finished!";
+
 	for(const auto& p : results)
 	{
 		cout << p.first << "," << p.second << endl;
 	}
+
 
 	return 0;
 }
