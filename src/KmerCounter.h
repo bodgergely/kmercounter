@@ -129,6 +129,7 @@ private:
 class Chunk
 {
 public:
+	Chunk() : _begin(nullptr), _end(nullptr) {}
 	Chunk(const char* begin, const char* end) : _begin(begin), _end(end) {}
 	const char* begin() const {return _begin;}
 	const char* end() const {return _end;}
@@ -164,7 +165,6 @@ class KmerCounter
 public:
 	KmerCounter(Chunk chunk, size_t k, size_t n, const HashTableConfig& config) :
 																			_chunk1(chunk),
-																			_chunk2(NULL, NULL),
 																			_hasTwoChunks(false),
 																			_totalLen(chunk.end()-chunk.begin()),
 																			_k(k),
@@ -228,37 +228,26 @@ protected:
 	{
 		if(_hasTwoChunks)
 		{
-			countInTwoChunk();
+			countInChunk(_chunk1);
+			// deal with the crossing into the second chunk -- this is tricky (and annoying) - since k is assumed to be much smaller than the chunk size: need to create contiguous memory from the two (malloc? then free later)
+			// we own! chunk! will have to free later (when is later? once we created the strings from under these raw char pointers -> then we can get rid of the memory)
+			_crossing = createCrossMemorySection(_chunk1, _chunk2, _k);
+			countInChunk(_crossing);
 		}
 		else
 		{
-			countInOneChunk();
+			countInChunk(_chunk1);
 		}
 	}
 
 
-	void countInOneChunk()
+	void countInChunk(const Chunk& chunk)
 	{
-		for(const char* curr = _chunk1.begin(); curr+_k<=_chunk1.end(); curr++)
+		for(const char* curr = chunk.begin(); curr+_k<=chunk.end(); curr++)
 		{
 			Memory mem(curr, curr+_k);
 			++_stringMap[mem];
 		}
-	}
-
-	void countInTwoChunk()
-	{
-		// first deal with the first chunk alone
-		const char* curr = _chunk1.begin();
-		for( ;curr+_k<=_chunk1.end(); curr++)
-		{
-			Memory mem(curr, curr+_k);
-			++_stringMap[mem];
-		}
-		// deal with the crossing into the second chunk -- this is tricky (and annoying) - since k is assumed to be much smaller than the chunk size: need to create contiguous memory from the two (malloc? then free later)
-		// we own! chunk! will have to free later (when is later? once we created the strings from under these raw char pointers -> then we can get rid of the memory)
-		Chunk crossing = createCrossMemorySection(_chunk1, _chunk2, _k);
-
 	}
 
 	void extractTopStrings()
@@ -288,6 +277,7 @@ protected:
 protected:
 	Chunk	_chunk1;
 	Chunk	_chunk2;
+	Chunk   _crossing;
 	bool	_hasTwoChunks;
 	size_t	_totalLen;
 	size_t _k;
