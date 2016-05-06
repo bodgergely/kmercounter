@@ -30,7 +30,7 @@ public:
 	{
 	}
 	
-	InputBuffer(const char* buffer, size_t len) : _buffer(buffer), _allocated(len), _len(len)
+	InputBuffer(char* buffer, size_t len) : _buffer(buffer), _allocated(len), _len(len)
 	{	
 	}
 	
@@ -66,7 +66,7 @@ public:
 	
 	size_t blocksize() const {return _blockSize;}
 	void   blocksize(size_t size) {_blockSize = size;}
-	size_t filepath() const {return _filePath;}
+	const string& filepath() const {return _filePath;}
 	size_t filesize() const {return _fileSize;}
 	
 

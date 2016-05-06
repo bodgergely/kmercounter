@@ -15,6 +15,7 @@ namespace kmers
 
 class KmerResultCollector
 {
+public:
 	void insert(const vector<pair<string, size_t>>& input)
 	{
 		std::copy(input.begin(),input.end(), back_inserter(_results));
@@ -45,7 +46,8 @@ public:
 	KmerEngine(const std::string& filePath, int k, int n, int threadCount) : _k(k),
 																			 _n(n),
 																			 _maxThreadedCounters(threadCount),
-																			 _fileReader(filePath)
+																			 _fileReader(filePath),
+																			 _finishedCounting(false)
 	{
 		size_t blksize = _fileReader.blocksize();
 		size_t  filesize = _fileReader.filesize();
@@ -69,12 +71,12 @@ public:
 		// might block below
 			addToCounterList(buffer);
 		}
-		_finished.store(true);
+		_finishedCounting.store(true);
 
 		_threadReconciliation.join();
 	}
 
-	const vector<pair<string, size_t>>& getResults() const
+	const vector<pair<string, size_t>>& getResults()
 	{
 		if(_result.empty())
 		{
@@ -111,7 +113,7 @@ private:
 		unique_lock<mutex> lock(_mutexOnCounters);
 		while(_counters.empty())
 		{
-			if(_finished.load() == false)
+			if(_finishedCounting.load() == false)
 				_condvarOnCounterSize.wait(lock);
 			else
 				return false;
@@ -141,7 +143,7 @@ private:
 	size_t _n;
 	size_t _numOfBlocks;
 	size_t				_maxThreadedCounters;
-	atomic<bool>		_finished = false;
+	atomic<bool>		_finishedCounting;
 	HashTableConfigPtr _hashTableConfig;
 	FileReader _fileReader;
 	condition_variable	 _condvarOnCounterSize;

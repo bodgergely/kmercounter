@@ -22,6 +22,7 @@
 #include <iterator>
 #include <cassert>
 #include <thread>
+#include <atomic>
 
 #define _DEBUG
 
@@ -40,6 +41,7 @@ using std::vector;
 using std::set;
 using std::map;
 using std::thread;
+using std::atomic;
 
 
 class Buffer
@@ -224,7 +226,9 @@ class KmerCounterThreaded : public KmerCounter
 public:
 	KmerCounterThreaded(const char* begin, const char* end, size_t k, size_t n, const HashTableConfig& config, bool startOnConstruction) :
 																					KmerCounter(begin, end, k, n, config),
-																					_startOnConstruction(startOnConstruction)
+																					_startOnConstruction(startOnConstruction),
+																					_finished(false)
+
 	{
 
 	}
@@ -250,13 +254,13 @@ protected:
 			_finished.store(true);
 		}
 		else
-			throw std::exception("Already started in constructor!");
+			throw std::runtime_error("Already started in constructor!");
 	}
 
 protected:
 	thread _processingThread;
 	bool _startOnConstruction;
-	atomic<bool> _finished = false;
+	atomic<bool> _finished;
 };
 
 
