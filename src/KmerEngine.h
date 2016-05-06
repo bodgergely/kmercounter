@@ -69,8 +69,16 @@ public:
 		while(!buffer.isEndofStream())
 		{
 			_fileReader.getNextBlock(buffer);
+
 		// might block below
-			addToCounterList(buffer);
+			if(_prevBuffer.getBuffer() == nullptr && !buffer.isEndofStream())
+			{
+				//noop wait for the second buffer
+			}
+			else
+				addToCounterList(buffer);
+
+			_prevBuffer = buffer;
 		}
 		_finishedCounting.store(true);
 
@@ -91,11 +99,18 @@ private:
 	void addToCounterList(const InputBuffer& buffer)
 	{
 		unique_lock<mutex> lock(_mutexOnCounters);
-		const char* begin = buffer.getBuffer();
-		const char* end = begin + buffer.getLen();
 		while(_counters.size()>=_maxThreadedCounters)
 			_condvarOnCounterSize.wait(lock);
-		_counters.push_back(KmerCounterThreadedPtr(new KmerCounterThreaded(Chunk(begin, end), _k, _n, *_hashTableConfig, true)));
+
+		const char* begin = buffer.getBuffer();
+		const char* end = begin + buffer.getLen();
+		Chunk prevChunk(_prevBuffer.getBuffer(), _prevBuffer.getBuffer() + _prevBuffer.getLen());
+		Chunk newChunk(begin, end);
+		if(prevChunk.begin() == nullptr && buffer.isEndofStream())
+			_counters.push_back(KmerCounterThreadedPtr(new KmerCounterThreaded(newChunk, _k, _n, *_hashTableConfig, true)));
+		else if(prevChunk.begin() != nullptr)		// there is a previous one
+			_counters.push_back(KmerCounterThreadedPtr(new KmerCounterThreaded(prevChunk, newChunk, _k, _n, *_hashTableConfig, true)));
+
 		_condvarOnCounterSize.notify_one();
 	}
 
@@ -155,6 +170,7 @@ private:
 	thread						_threadReconciliation;
 	KmerResultCollector			 _resultCollector;
 	vector<pair<string, size_t>> _result;
+	InputBuffer					 _prevBuffer;
 };
 
 
