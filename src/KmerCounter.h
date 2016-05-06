@@ -230,7 +230,8 @@ public:
 																					_finished(false)
 
 	{
-
+		if(_startOnConstruction)
+			kickoff();
 	}
 
 	~KmerCounterThreaded()
@@ -242,19 +243,24 @@ public:
 
 	void start()
 	{
-		_processingThread = thread(&KmerCounterThreaded::process, this);
-	}
-
-protected:
-	virtual void process()
-	{
 		if(!_startOnConstruction)
 		{
-			KmerCounter::process();
-			_finished.store(true);
+			kickoff();
 		}
 		else
 			throw std::runtime_error("Already started in constructor!");
+	}
+
+protected:
+	void kickoff()
+	{
+		_processingThread = thread(&KmerCounterThreaded::process, this);
+	}
+
+	virtual void process()
+	{
+		KmerCounter::process();
+		_finished.store(true);
 	}
 
 protected:

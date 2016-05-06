@@ -95,6 +95,7 @@ private:
 		while(_counters.size()>=_maxThreadedCounters)
 			_condvarOnCounterSize.wait(lock);
 		_counters.push_back(KmerCounterThreadedPtr(new KmerCounterThreaded(begin, end, _k, _n, *_hashTableConfig, true)));
+		_condvarOnCounterSize.notify_one();
 	}
 
 	void startReconciliation()
@@ -113,8 +114,9 @@ private:
 		unique_lock<mutex> lock(_mutexOnCounters);
 		while(_counters.empty())
 		{
-			if(_finishedCounting.load() == false)
+			if(_finishedCounting.load() == false){
 				_condvarOnCounterSize.wait(lock);
+			}
 			else
 				return false;
 		}

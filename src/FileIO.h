@@ -62,7 +62,10 @@ public:
 		_fileSize = _stream.tellg();
 		_stream.seekg(0, _stream.beg);
 	}
-	~FileReader(){}
+	~FileReader()
+	{
+		_ioThread.join();
+	}
 	
 	size_t blocksize() const {return _blockSize;}
 	void   blocksize(size_t size) {_blockSize = size;}
@@ -114,7 +117,9 @@ protected:
 			InputBuffer buf = readNextBlock();
 			pushToQueue(buf);
 			if(buf.isEndofStream())
+			{
 				break;
+			}
 		}
 		_finishedReadingFile = true;
 	}
@@ -123,7 +128,7 @@ protected:
 	{
 		std::unique_lock<mutex> lock(_mutexBufferQueue);
 		_bufferQueue.push(buffer);
-		_condvarQueue.notify_all();
+		_condvarQueue.notify_one();
 	}
 
 
