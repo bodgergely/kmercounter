@@ -19,22 +19,62 @@ class KmerResultCollector
 public:
 	void insert(const vector<pair<string, size_t>>& input)
 	{
-		std::copy(input.begin(),input.end(), back_inserter(_results));
+		std::copy(input.begin(),input.end(), back_inserter(_partialResults));
 	}
 
 	vector<pair<string, size_t>> getResults()
 	{
+		accumulate();
+
+		// sort by count
 		std::sort(_results.begin(), _results.end(), [](const pair<string, size_t>& lhs, const pair<string, size_t>& rhs)
-													{
-														if(lhs.second >= rhs.second)
-															return true;
-														else
-															return false;
-													});
+															{
+																if(lhs.second >= rhs.second)
+																	return true;
+																else
+																	return false;
+															});
+
 		return _results;
 
 	}
+
 private:
+	// TODO test if correct!
+	void accumulate()
+	{
+		// sort by string first so that we can accumulate
+		std::sort(_partialResults.begin(), _partialResults.end(), [](const pair<string, size_t>& lhs, const pair<string, size_t>& rhs)
+															{
+																if(lhs.first <= rhs.first)
+																	return true;
+																else
+																	return false;
+															});
+
+
+
+		string currStr(_partialResults[0].first);
+		size_t count = 0;
+		for(int i=0;i<_partialResults.size();i++)
+		{
+			const auto& elem = _partialResults[i];
+			if(elem.first!=currStr)
+			{
+				_results.push_back(make_pair(currStr, count));
+				currStr = elem.first;
+				count = 0;
+			}
+
+			count+=elem.second;
+		}
+
+		_results.push_back(make_pair(currStr, count));
+
+	}
+
+private:
+	vector<pair<string, size_t>> _partialResults;
 	vector<pair<string, size_t>> _results;
 };
 
