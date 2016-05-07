@@ -183,6 +183,7 @@ private:
 
 		_counters.pop_front();
 
+		_condvarOnCounterSize.notify_one();
 		return true;
 
 	}

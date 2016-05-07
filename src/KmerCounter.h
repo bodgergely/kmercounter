@@ -29,6 +29,7 @@
 #ifdef _DEBUG
 #include <iostream>
 using namespace std;
+using namespace std::chrono;
 #endif
 
 namespace kmers
@@ -267,6 +268,7 @@ protected:
 		cout << "hashmap count: " << hashmapCount << "\n";
 
 		// TODO this sort taking very long for some reason!
+		time_point<system_clock> before = system_clock::now();
 		std::sort(_sortedMems.begin(), _sortedMems.end(), [](const pair<Memory, size_t>& lhs, const pair<Memory, size_t>& rhs)
 															{
 																if(lhs.second >= rhs.second)
@@ -274,6 +276,9 @@ protected:
 																else
 																	return false;
 															});
+		time_point<system_clock> after = system_clock::now();
+
+		//cout << "Took: " << duration_cast<milliseconds>(after-before).count() << endl;
 
 
 	}
