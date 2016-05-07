@@ -16,66 +16,48 @@ namespace kmers
 
 class KmerResultCollector
 {
+	using Pair = pair<string, size_t>;
+	using Result = vector<Pair>;
+	using ResultCollection = vector<Result>;
+	using HashMap = unordered_map<string, size_t>;
+
 public:
+	// n is the top most count strings
+	KmerResultCollector(int n) : _n(n) {}
 	void insert(const vector<pair<string, size_t>>& input)
 	{
-		std::copy(input.begin(),input.end(), back_inserter(_partialResults));
+		_results.push_back(input);
 	}
 
-	vector<pair<string, size_t>> getResults()
+	vector<pair<string, size_t>> getResult()
 	{
-		accumulate();
-
-		// sort by count
-		std::sort(_results.begin(), _results.end(), [](const pair<string, size_t>& lhs, const pair<string, size_t>& rhs)
-															{
-																if(lhs.second >= rhs.second)
-																	return true;
-																else
-																	return false;
-															});
-
-		return _results;
-
-	}
-
-private:
-	// TODO test if correct!
-	void accumulate()
-	{
-		// sort by string first so that we can accumulate
-		std::sort(_partialResults.begin(), _partialResults.end(), [](const pair<string, size_t>& lhs, const pair<string, size_t>& rhs)
-															{
-																if(lhs.first <= rhs.first)
-																	return true;
-																else
-																	return false;
-															});
-
-
-
-		string currStr(_partialResults[0].first);
-		size_t count = 0;
-		for(int i=0;i<_partialResults.size();i++)
+		// combine the results
+		HashMap map;
+		for(const Result& r : _results)
 		{
-			const auto& elem = _partialResults[i];
-			if(elem.first!=currStr)
+			for(const Pair& p : r)
 			{
-				_results.push_back(make_pair(currStr, count));
-				currStr = elem.first;
-				count = 0;
+				map[p.first]+=p.second;
 			}
-
-			count+=elem.second;
 		}
 
-		_results.push_back(make_pair(currStr, count));
-
+		Result tmp;
+		for(HashMap::const_iterator it=map.begin();it!=map.end();it++)
+		{
+			tmp.push_back(*it);
+		}
+		// sort or use brute force extraction? using brute force now
+		Result res;
+		extract(res, tmp, _n);
+		return res;
 	}
 
 private:
-	vector<pair<string, size_t>> _partialResults;
-	vector<pair<string, size_t>> _results;
+
+
+private:
+	size_t _n;
+	ResultCollection _results;
 };
 
 
@@ -88,7 +70,8 @@ public:
 																			 _n(n),
 																			 _maxThreadedCounters(threadCount),
 																			 _fileReader(filePath),
-																			 _finishedCounting(false)
+																			 _finishedCounting(false),
+																			 _resultCollector(n)
 	{
 		size_t blksize = _fileReader.blocksize();
 		size_t  filesize = _fileReader.filesize();
@@ -129,7 +112,7 @@ public:
 	{
 		if(_result.empty())
 		{
-			_result = _resultCollector.getResults();
+			_result = _resultCollector.getResult();
 		}
 
 		return _result;

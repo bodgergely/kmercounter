@@ -160,6 +160,38 @@ Chunk createCrossMemorySection(const Chunk& chunk1, const Chunk& chunk2, int k)
 }
 
 /*
+ * brute force extraction of the top n size elements
+ */
+template<class T>
+void extract(vector<pair<T, size_t>>& res, const vector<pair<T, size_t>>& from, int n)
+{
+
+	int count = 0;
+	size_t limitSize = std::numeric_limits<size_t>::max();
+	while(count < n)
+	{
+		size_t biggest = 0;
+		for(const auto& p : from)
+		{
+			if(p.second > biggest && p.second < limitSize)
+				biggest = p.second;
+		}
+		count++;
+		limitSize = biggest;
+		// second pass -> populate the res array with the biggest sizes
+		for(const auto& p : from)
+		{
+			if(p.second == biggest)
+			{
+				res.push_back(p);
+			}
+		}
+	}
+
+}
+
+
+/*
  * this one can compare only contiguous memory
  */
 class KmerCounter
@@ -244,7 +276,7 @@ protected:
 		unsigned long long totalCount = 0;
 		int hashmapCount=0;
 		vector<pair<Memory, size_t>>    tmp;
-		for(HashMap::iterator it=_stringMap.begin(); it!=_stringMap.end(); it++)
+		for(HashMap::const_iterator it=_stringMap.begin(); it!=_stringMap.end(); it++)
 		{
 			hashmapCount++;
 			totalCount+=it->second;
@@ -259,7 +291,7 @@ protected:
 		_sw.start();
 		//find the next biggest count
 		vector<pair<Memory, size_t>> res;
-		extract(res, tmp);
+		extract(res, tmp, _n);
 
 		for(const auto& l : res)
 		{
@@ -268,36 +300,6 @@ protected:
 		}
 		cout << "Took: " << _sw.stop() << endl;
 
-
-	}
-
-	/*
-	 * brute force extraction of the top n size elements
-	 */
-	void extract(vector<pair<Memory, size_t>>& res, const vector<pair<Memory, size_t>>& from)
-	{
-
-		int count = 0;
-		size_t limitSize = std::numeric_limits<size_t>::max();
-		while(count < _n)
-		{
-			size_t biggest = 0;
-			for(const auto& p : from)
-			{
-				if(p.second > biggest && p.second < limitSize)
-					biggest = p.second;
-			}
-			count++;
-			limitSize = biggest;
-			// second pass -> populate the res array with the biggest sizes
-			for(const auto& p : from)
-			{
-				if(p.second == biggest)
-				{
-					res.push_back(p);
-				}
-			}
-		}
 
 	}
 
