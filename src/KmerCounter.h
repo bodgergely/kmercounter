@@ -5,8 +5,10 @@
  *      Author: geri
  */
 
-#ifndef KMERS_H_
-#define KMERS_H_
+#ifndef KMERCOUNTER_H_
+#define KMERCOUNTER_H_
+
+#include <StopWatch.h>
 
 #include <cstring>
 #include <string>
@@ -197,32 +199,18 @@ public:
 		extractTopStrings();
 	}
 
-	void getTopStrings(vector<pair<string,size_t> >& out) const
+	const vector<pair<string,size_t> >& getTopStrings() const
 	{
-		// TODO refactor - extract method below
-		int count=0;
-		size_t prevSize = 0;
-		for(int i=0;i < _sortedMems.size();i++)
-		{
-			const auto& tmp = _sortedMems[i];
-			if(prevSize!=tmp.second)
-				count++;
-			prevSize = tmp.second;
-			if(count>_n)
-				break;
-
-			string s = string(tmp.first.begin(), tmp.first.end() - tmp.first.begin());
-			out.push_back(std::make_pair(s, tmp.second));
-
-		}
+		return _result;
 	}
+
+
 
 protected:
 	void init()
 	{
 		_stringMap.reserve(_hashConfig.initialSize);
 		_stringMap.max_load_factor(_hashConfig.maxLoadFactor);
-		_sortedMems.reserve(_chunk1.end()-_chunk1.begin());
 	}
 
 	void count()
@@ -255,33 +243,62 @@ protected:
 	{
 		unsigned long long totalCount = 0;
 		int hashmapCount=0;
-		for(HashMap::iterator it=_stringMap.begin(); it!=_stringMap.end(); )
+		vector<pair<Memory, size_t>>    tmp;
+		for(HashMap::iterator it=_stringMap.begin(); it!=_stringMap.end(); it++)
 		{
 			hashmapCount++;
 			totalCount+=it->second;
-			_sortedMems.push_back(*it);
-			it = _stringMap.erase(it);
+			tmp.push_back(*it);
 		}
 
 		assert(totalCount == _totalLen-_k+1);
 
 		cout << "hashmap count: " << hashmapCount << "\n";
 
-		// TODO this sort taking very long for some reason!
-		time_point<system_clock> before = system_clock::now();
-		std::sort(_sortedMems.begin(), _sortedMems.end(), [](const pair<Memory, size_t>& lhs, const pair<Memory, size_t>& rhs)
-															{
-																if(lhs.second >= rhs.second)
-																	return true;
-																else
-																	return false;
-															});
-		time_point<system_clock> after = system_clock::now();
+		// sorting takes a very long time reason is that we have tooo many same count sizes and makes it O(n2)
+		_sw.start();
+		//find the next biggest count
+		vector<pair<Memory, size_t>> res;
+		extract(res, tmp);
 
-		//cout << "Took: " << duration_cast<milliseconds>(after-before).count() << endl;
+		for(const auto& l : res)
+		{
+			string s = string(l.first.begin(), l.first.end() - l.first.begin());
+			_result.push_back(std::make_pair(s, l.second));
+		}
+		cout << "Took: " << _sw.stop() << endl;
 
 
 	}
+
+	void extract(vector<pair<Memory, size_t>>& res, const vector<pair<Memory, size_t>>& from)
+	{
+
+		int count = 0;
+		size_t limitSize = std::numeric_limits<size_t>::max();
+		while(count < _n)
+		{
+			size_t biggest = 0;
+			for(const auto& p : from)
+			{
+				if(p.second > biggest && p.second < limitSize)
+					biggest = p.second;
+			}
+			count++;
+			limitSize = biggest;
+			// second pass -> populate the res array with the biggest sizes
+			for(const auto& p : from)
+			{
+				if(p.second == biggest)
+				{
+					res.push_back(p);
+				}
+			}
+		}
+
+	}
+
+
 
 
 
@@ -296,7 +313,8 @@ protected:
 	size_t _n;
 	HashMap _stringMap;
 	HashTableConfig _hashConfig;
-	vector<pair<Memory, size_t>>    _sortedMems;
+	StopWatch<chrono::milliseconds> _sw;
+	vector<pair<string, size_t>> _result;
 };
 
 
