@@ -271,6 +271,9 @@ protected:
 
 	}
 
+	/*
+	 * brute force extraction of the top n size elements
+	 */
 	void extract(vector<pair<Memory, size_t>>& res, const vector<pair<Memory, size_t>>& from)
 	{
 
