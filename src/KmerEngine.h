@@ -4,6 +4,7 @@
 #include <KmerCounter.h>
 #include <FileIO.h>
 #include <memory>
+#include <cmath>
 
 using io::FileReader;
 using io::InputBuffer;
@@ -23,7 +24,22 @@ class KmerResultCollector
 
 public:
 	// n is the top most count strings
-	KmerResultCollector(int n) : _n(n) {}
+	KmerResultCollector(size_t n) : _n(n), _hc(0,0)
+	{
+	}
+
+	KmerResultCollector(int n,  HashTableConfig hc) : _n(n), _hc(hc)
+	{
+		_database.reserve(hc.initialSize);
+		_database.reserve(hc.maxLoadFactor);
+	}
+
+	void setHashTableConfig(HashTableConfig hc)
+	{
+		_hc = hc;
+		_database.reserve(hc.initialSize);
+		_database.reserve(hc.maxLoadFactor);
+	}
 
 	unordered_map<string, size_t>& GlobalDataBase() {return _database;}
 
@@ -39,6 +55,8 @@ public:
 		// sort or use brute force extraction? using brute force now
 		Result res;
 		extract(res, tmp, _n);
+
+		cout << "Number of strings: " << tmp.size();
 		return res;
 	}
 
@@ -47,6 +65,7 @@ private:
 
 private:
 	size_t _n;
+	HashTableConfig _hc;
 	HashMap _database;
 	ResultCollection _results;
 };
@@ -66,11 +85,16 @@ public:
 	{
 		size_t blksize = _fileReader.blocksize();
 		size_t  filesize = _fileReader.filesize();
+
+		size_t recommendedbuckets = calculateInitialHashTableSize(filesize, _k);
+		_resultCollector.setHashTableConfig(HashTableConfig(recommendedbuckets, 5));
+
 		_numOfBlocks = filesize / blksize+1;
 		if(filesize%blksize == 0)
 			_numOfBlocks--;
 		_hashTableConfig = HashTableConfigPtr(new HashTableConfig(blksize/10, 12));
 	}
+
 
 	void start()
 	{
@@ -90,7 +114,7 @@ public:
 				//noop wait for the second buffer
 			}
 			else
-				addToCounterList(buffer);
+				createCounter(buffer);
 
 			_prevBuffer = buffer;
 		}
@@ -110,7 +134,20 @@ public:
 	}
 
 private:
-	void addToCounterList(const InputBuffer& buffer)
+	size_t calculateInitialHashTableSize(size_t filesize, size_t kmerLength)
+	{
+		// the longer the kmer length the more likely we need lots of buckets - not sure hwo to determine this size efficiently yet
+		// we could have some statistics gathered from the genomes to determine the expected bucket count using some heuristics
+		// the possible permutations of a kmer is 5^k - which is exponentially blows up but okay for small k-s
+		if(kmerLength <= 10)
+			return pow(5,kmerLength);
+		else
+			// using cap of kmer lenght of 11
+			return pow(5, 11);
+
+	}
+
+	void createCounter(const InputBuffer& buffer)
 	{
 		unique_lock<mutex> lock(_mutexOnCounters);
 		while(_counters.size()>=_maxThreadedCounters)

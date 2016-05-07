@@ -136,6 +136,12 @@ public:
 	Chunk(const char* begin, const char* end) : _begin(begin), _end(end) {}
 	const char* begin() const {return _begin;}
 	const char* end() const {return _end;}
+
+	void deallocate()
+	{
+		delete[] _begin;
+	}
+
 private:
 	const char* _begin;
 	const char* _end;	// not included (C++ iterator style range)
@@ -222,7 +228,7 @@ public:
 
 	virtual ~KmerCounter()
 	{
-
+		_chunk1.deallocate();
 	}
 
 	virtual void process()
@@ -327,7 +333,6 @@ public:
 
 	~KmerCounterThreaded()
 	{
-
 	}
 
 	thread&		threadHandle() {return _processingThread;}
