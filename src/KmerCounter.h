@@ -240,7 +240,8 @@ public:
 	{
 		unsigned long long totalCount = 0;
 		int hashmapCount=0;
-		// might be very expensive the string construction below
+		// might be very expensive the string construction below plus memory problems on high k size (5^k) very high k length and
+		// random pattern makes the substring count easily (filesize-kmerLen) - and at hsi point we just have a local result
 		_sw.start();
 		for(HashMap::const_iterator it=_stringMap.begin(); it!=_stringMap.end(); it++)
 		{
