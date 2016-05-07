@@ -228,15 +228,30 @@ public:
 	virtual void process()
 	{
 		count();
-		extractTopStrings();
 	}
 
-	const vector<pair<string,size_t> >& getTopStrings() const
+	void extractProcessingResult(unordered_map<string, size_t>& database_)
 	{
-		return _result;
+		unsigned long long totalCount = 0;
+		int hashmapCount=0;
+		// might be very expensive the string construction below
+		_sw.start();
+		for(HashMap::const_iterator it=_stringMap.begin(); it!=_stringMap.end(); it++)
+		{
+			hashmapCount++;
+			totalCount+=it->second;
+			const auto& pair = *it;
+			const Memory& mem = pair.first;
+			size_t count = pair.second;
+			string s = string(pair.first.begin(), pair.first.end() - pair.first.begin());
+			database_[s] = count;
+		}
+
+		cout << "Took: " << _sw.stop() << endl;
+		assert(totalCount == _totalLen-_k+1);
+		cout << "hashmap count: " << hashmapCount << "\n";
+
 	}
-
-
 
 protected:
 	void init()
@@ -271,42 +286,6 @@ protected:
 		}
 	}
 
-	void extractTopStrings()
-	{
-		unsigned long long totalCount = 0;
-		int hashmapCount=0;
-		vector<pair<Memory, size_t>>    tmp;
-		for(HashMap::const_iterator it=_stringMap.begin(); it!=_stringMap.end(); it++)
-		{
-			hashmapCount++;
-			totalCount+=it->second;
-			tmp.push_back(*it);
-		}
-
-		assert(totalCount == _totalLen-_k+1);
-
-		cout << "hashmap count: " << hashmapCount << "\n";
-
-		// sorting takes a very long time reason is that we have tooo many same count sizes and makes it O(n2)
-		_sw.start();
-		//find the next biggest count
-		vector<pair<Memory, size_t>> res;
-		extract(res, tmp, _n);
-
-		for(const auto& l : res)
-		{
-			string s = string(l.first.begin(), l.first.end() - l.first.begin());
-			_result.push_back(std::make_pair(s, l.second));
-		}
-		cout << "Took: " << _sw.stop() << endl;
-
-
-	}
-
-
-
-
-
 
 protected:
 	Chunk	_chunk1;
@@ -319,7 +298,6 @@ protected:
 	HashMap _stringMap;
 	HashTableConfig _hashConfig;
 	StopWatch<chrono::milliseconds> _sw;
-	vector<pair<string, size_t>> _result;
 };
 
 

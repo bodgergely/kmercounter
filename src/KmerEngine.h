@@ -24,25 +24,15 @@ class KmerResultCollector
 public:
 	// n is the top most count strings
 	KmerResultCollector(int n) : _n(n) {}
-	void insert(const vector<pair<string, size_t>>& input)
-	{
-		_results.push_back(input);
-	}
+
+	unordered_map<string, size_t>& GlobalDataBase() {return _database;}
 
 	vector<pair<string, size_t>> getResult()
 	{
 		// combine the results
-		HashMap map;
-		for(const Result& r : _results)
-		{
-			for(const Pair& p : r)
-			{
-				map[p.first]+=p.second;
-			}
-		}
 
 		Result tmp;
-		for(HashMap::const_iterator it=map.begin();it!=map.end();it++)
+		for(HashMap::const_iterator it=_database.begin();it!=_database.end();it++)
 		{
 			tmp.push_back(*it);
 		}
@@ -57,6 +47,7 @@ private:
 
 private:
 	size_t _n;
+	HashMap _database;
 	ResultCollection _results;
 };
 
@@ -173,8 +164,7 @@ private:
 
 	void populateTopStrings(const KmerCounterThreadedPtr& kc)
 	{
-		 const vector<pair<string, size_t>>& res = kc->getTopStrings();
-		_resultCollector.insert(res);
+		kc->extractProcessingResult(_resultCollector.GlobalDataBase());
 	}
 
 
