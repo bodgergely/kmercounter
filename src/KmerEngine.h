@@ -2,6 +2,7 @@
 #define KMERENGINE_H_
 
 #include <KmerCounter.h>
+#include <StopWatch.h>
 #include <FileIO.h>
 #include <memory>
 #include <cmath>
@@ -24,59 +25,28 @@ class KmerResultCollector
 
 public:
 	// n is the top most count strings
-	KmerResultCollector(size_t n) : _n(n), _hc(0,0)
+	KmerResultCollector(size_t n, size_t k) : _n(n), _k(k), _tree(n, k)
 	{
 	}
 
-	KmerResultCollector(int n,  HashTableConfig hc) : _n(n), _hc(hc)
+
+	void insert(const char* begin, const char* end, unsigned int count)
 	{
-		_database.reserve(hc.initialSize);
-		_database.reserve(hc.maxLoadFactor);
+		_tree.insert(begin, end, count);
 	}
 
-	void setHashTableConfig(HashTableConfig hc)
+	void insert(const string& kmer, unsigned int count)
 	{
-		_hc = hc;
-		_database.reserve(hc.initialSize);
-		_database.reserve(hc.maxLoadFactor);
+		insert(kmer.c_str(), kmer.c_str()+kmer.size(), count);
 	}
 
-	HashMap& GlobalDataBase() {return _database;}
-
-	vector<pair<string, size_t>> getResult()
+	vector<pair<string, unsigned long>> getResult()
 	{
 		// combine the results
+		cout << "Number of nodes allocated in the tree: " << _tree.numberOfNodes() << endl;
 
-		Result tmp;
-		for(HashMap::const_iterator it=_database.begin();it!=_database.end();it++)
-		{
-			tmp.push_back(*it);
-		}
-		// sort or use brute force extraction? using brute force now
-		Result res;
-		extract(res, tmp, _n);
+		vector<pair<string, unsigned long>> stringRes = _tree.getResults();
 
-		//stringify results
-		vector<pair<string, size_t>> stringRes;
-		for(const auto& r : res)
-		{
-			const Memory& mem = r.first;
-			size_t count = r.second;
-			string s = string(mem.begin(), mem.end()-mem.begin());
-			stringRes.push_back(make_pair(s, count));
-		}
-
-		//deallocate Memory objects now
-		for(HashMap::iterator it=_database.begin();it!=_database.end();it++)
-		{
-			Memory mem = it->first;
-			if(mem.owner())
-				mem.deallocate();
-		}
-
-		_database.clear();
-
-		cout << "Number of strings: " << tmp.size() << endl;
 		return stringRes;
 	}
 
@@ -85,8 +55,8 @@ private:
 
 private:
 	size_t _n;
-	HashTableConfig _hc;
-	HashMap _database;
+	size_t _k;
+	QuintTree _tree;
 };
 
 
@@ -100,13 +70,10 @@ public:
 																			 _maxThreadedCounters(threadCount),
 																			 _fileReader(filePath),
 																			 _finishedCounting(false),
-																			 _resultCollector(n)
+																			 _resultCollector(n, k)
 	{
 		size_t blksize = _fileReader.blocksize();
 		size_t  filesize = _fileReader.filesize();
-
-		size_t recommendedbuckets = calculateInitialHashTableSize(filesize, _k);
-		_resultCollector.setHashTableConfig(HashTableConfig(recommendedbuckets, 5));
 
 		_numOfBlocks = filesize / blksize+1;
 		if(filesize%blksize == 0)
@@ -153,18 +120,6 @@ public:
 	}
 
 private:
-	size_t calculateInitialHashTableSize(size_t filesize, size_t kmerLength)
-	{
-		// the longer the kmer length the more likely we need lots of buckets - not sure hwo to determine this size efficiently yet
-		// we could have some statistics gathered from the genomes to determine the expected bucket count using some heuristics
-		// the possible permutations of a kmer is 5^k - which is exponentially blows up but okay for small k-s
-		if(kmerLength <= 10)
-			return pow(5,kmerLength);
-		else
-			// using cap of kmer lenght of 11
-			return pow(5, 11);
-
-	}
 
 	void createCounter(const InputBuffer& buffer)
 	{
@@ -209,7 +164,7 @@ private:
 		// wait for it to finish
 		_counters.front()->threadHandle().join();
 		KmerCounterThreadedPtr& kc = _counters.front();
-		populateTopStrings(kc);
+		processResults(kc);
 
 		_counters.pop_front();
 
@@ -218,9 +173,28 @@ private:
 
 	}
 
-	void populateTopStrings(const KmerCounterThreadedPtr& kc)
+	void processResults(const KmerCounterThreadedPtr& kc)
 	{
-		kc->extractProcessingResult(_resultCollector.GlobalDataBase());
+		const KmerCounter::HashMap& stringMap = kc->getResults();
+		unsigned long long totalCount = 0;
+		int hashmapCount=0;
+		// might be very expensive the string construction below plus memory problems on high k size (5^k) very high k length and
+		// random pattern makes the substring count easily (filesize-kmerLen) - and at hsi point we just have a local result
+		_sw.start();
+		for(KmerCounter::HashMap::const_iterator it=stringMap.begin(); it!=stringMap.end(); it++)
+		{
+			hashmapCount++;
+			totalCount+=it->second;
+			const auto& pair = *it;
+			const Memory& mem = pair.first;
+			size_t count = pair.second;
+			_resultCollector.insert(mem.begin(), mem.end(), count);
+		}
+
+		cout << "Took: " << _sw.stop() << endl;
+		assert(totalCount == kc->getTotalLength()-_k+1);
+		cout << "hashmap count: " << hashmapCount << "\n";
+
 	}
 
 
@@ -240,6 +214,7 @@ private:
 	KmerResultCollector			 _resultCollector;
 	vector<pair<string, size_t>> _result;
 	InputBuffer					 _prevBuffer;
+	StopWatch<chrono::milliseconds> _sw;
 };
 
 

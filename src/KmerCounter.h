@@ -9,6 +9,7 @@
 #define KMERCOUNTER_H_
 
 #include <StopWatch.h>
+#include <QuintTree.h>
 
 #include <cstring>
 #include <string>
@@ -224,8 +225,8 @@ void extract(vector<pair<T, size_t>>& res, const vector<pair<T, size_t>>& from, 
  */
 class KmerCounter
 {
-	using HashMap = std::unordered_map<Memory, size_t, Memory::Hash>;
 public:
+	using HashMap = std::unordered_map<Memory, size_t, Memory::Hash>;
 	KmerCounter(Chunk chunk, size_t k, size_t n, const HashTableConfig& config) :
 																			_chunk1(chunk),
 																			_hasTwoChunks(false),
@@ -259,35 +260,12 @@ public:
 		count();
 	}
 
-	void extractProcessingResult(unordered_map<Memory, size_t, Memory::Hash>& database_)
+	const HashMap& getResults()
 	{
-		unsigned long long totalCount = 0;
-		int hashmapCount=0;
-		// might be very expensive the string construction below plus memory problems on high k size (5^k) very high k length and
-		// random pattern makes the substring count easily (filesize-kmerLen) - and at hsi point we just have a local result
-		_sw.start();
-		for(HashMap::const_iterator it=_stringMap.begin(); it!=_stringMap.end(); it++)
-		{
-			hashmapCount++;
-			totalCount+=it->second;
-			const auto& pair = *it;
-			const Memory& mem = pair.first;
-			size_t count = pair.second;
-			Memory newMem = Memory(mem.begin(), mem.end(), true);
-			bool redundantAllocation = false;
-			if(database_.find(newMem)!=database_.end())
-				redundantAllocation = true;
-			database_[newMem]+=count;
-			if(redundantAllocation)
-				newMem.deallocate();
-
-		}
-
-		cout << "Took: " << _sw.stop() << endl;
-		assert(totalCount == _totalLen-_k+1);
-		cout << "hashmap count: " << hashmapCount << "\n";
-
+		return _stringMap;
 	}
+
+	size_t getTotalLength() const {return _totalLen;}
 
 protected:
 	void init()

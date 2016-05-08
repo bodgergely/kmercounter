@@ -25,12 +25,14 @@ int main(int argc, char** argv)
 
 	KmerEngine engine(file, k, n, threadCount);
 	engine.start();
-	vector<pair<string, size_t>> results = engine.getResults();
+	vector<pair<string, unsigned long>> results = engine.getResults();
 
+	/*
 	for(const auto& p : results)
 	{
 		cout << p.first << "," << p.second << endl;
 	}
+	*/
 
 	cout << "Finished!\n";
 
