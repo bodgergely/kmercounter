@@ -122,7 +122,7 @@ private:
 	void allocateAndCopy(const char* begin, const char* end)
 	{
 		size_t size = end - begin;
-		_begin = new char[sizeof(char)*size];
+		_begin = (char*)malloc(sizeof(char)*size);
 		_end = _begin + size;
 		memcpy(const_cast<char*>(_begin), const_cast<char*>(begin), size);
 	}
@@ -159,7 +159,7 @@ public:
 
 	void deallocate()
 	{
-		delete[] _begin;
+		free(const_cast<char*>(_begin));
 		_begin = nullptr;
 		_end = nullptr;
 	}
@@ -280,6 +280,7 @@ public:
 			database_[newMem]+=count;
 			if(redundantAllocation)
 				newMem.deallocate();
+
 
 		}
 

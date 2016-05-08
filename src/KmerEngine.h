@@ -24,11 +24,11 @@ class KmerResultCollector
 
 public:
 	// n is the top most count strings
-	KmerResultCollector(size_t n) : _n(n), _hc(0,0)
+	KmerResultCollector(size_t n) : _n(n), _hc(0,0), _totalKmerCount(0)
 	{
 	}
 
-	KmerResultCollector(int n,  HashTableConfig hc) : _n(n), _hc(hc)
+	KmerResultCollector(int n,  HashTableConfig hc) : _n(n), _hc(hc), _totalKmerCount(0)
 	{
 		_database.reserve(hc.initialSize);
 		_database.reserve(hc.maxLoadFactor);
@@ -41,6 +41,7 @@ public:
 		_database.reserve(hc.maxLoadFactor);
 	}
 
+
 	HashMap& GlobalDataBase() {return _database;}
 
 	vector<pair<string, size_t>> getResult()
@@ -51,6 +52,7 @@ public:
 		for(HashMap::const_iterator it=_database.begin();it!=_database.end();it++)
 		{
 			tmp.push_back(*it);
+			_totalKmerCount+=it->second;
 		}
 		// sort or use brute force extraction? using brute force now
 		Result res;
@@ -77,14 +79,18 @@ public:
 		_database.clear();
 
 		cout << "Number of strings: " << tmp.size() << endl;
+
 		return stringRes;
 	}
+
+	unsigned long long totalKmerCount() const {return _totalKmerCount;}
 
 private:
 
 
 private:
 	size_t _n;
+	unsigned long long _totalKmerCount;
 	HashTableConfig _hc;
 	HashMap _database;
 };
@@ -97,6 +103,7 @@ class KmerEngine
 public:
 	KmerEngine(const std::string& filePath, int k, int n, int threadCount) : _k(k),
 																			 _n(n),
+																			 _numOfCountersCreated(0),
 																			 _maxThreadedCounters(threadCount),
 																			 _fileReader(filePath),
 																			 _finishedCounting(false),
@@ -147,10 +154,15 @@ public:
 		if(_result.empty())
 		{
 			_result = _resultCollector.getResult();
+			cout << "Number of counters created: " << _numOfCountersCreated << endl;
+			auto totalkmers = _resultCollector.totalKmerCount();
+			cout << "Total kmers: " << totalkmers << "Expected: " <<  _fileReader.filesize()-_k+1;
+			assert(totalkmers == _fileReader.filesize()-_k+1);
 		}
-
 		return _result;
 	}
+
+	unsigned long long totalKmerCount() const {return _resultCollector.totalKmerCount();}
 
 private:
 	size_t calculateInitialHashTableSize(size_t filesize, size_t kmerLength)
@@ -172,6 +184,7 @@ private:
 		while(_counters.size()>=_maxThreadedCounters)
 			_condvarOnCounterSize.wait(lock);
 
+		++_numOfCountersCreated;
 		const char* begin = buffer.getBuffer();
 		const char* end = begin + buffer.getLen();
 		Chunk prevChunk(_prevBuffer.getBuffer(), _prevBuffer.getBuffer() + _prevBuffer.getLen());
@@ -229,6 +242,7 @@ private:
 	size_t _k;
 	size_t _n;
 	size_t _numOfBlocks;
+	size_t _numOfCountersCreated;
 	size_t				_maxThreadedCounters;
 	atomic<bool>		_finishedCounting;
 	HashTableConfigPtr _hashTableConfig;

@@ -26,6 +26,8 @@ int main(int argc, char** argv)
 	KmerEngine engine(file, k, n, threadCount);
 	engine.start();
 	vector<pair<string, size_t>> results = engine.getResults();
+	unsigned long long totalkmerCount = engine.totalKmerCount();
+
 
 	for(const auto& p : results)
 	{
