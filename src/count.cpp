@@ -27,12 +27,10 @@ int main(int argc, char** argv)
 	engine.start();
 	vector<pair<string, size_t>> results = engine.getResults();
 
-	/*
 	for(const auto& p : results)
 	{
 		cout << p.first << "," << p.second << endl;
 	}
-	*/
 
 	cout << "Finished!\n";
 

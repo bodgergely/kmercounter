@@ -69,8 +69,13 @@ struct HashTableConfig
 class Memory
 {
 public:
-	Memory(const char* begin, const char* end) : _begin(begin), _end(end), _len(_end-_begin)
+	Memory(const char* begin, const char* end, bool copy) : _begin(begin), _end(end), _len(_end-_begin), _memoryOwner(false)
 	{
+		if(copy)
+		{
+			allocateAndCopy(begin, end);
+			_memoryOwner = true;
+		}
 		calchash();
 	}
 	inline bool operator==(const Memory& other) const
@@ -97,6 +102,13 @@ public:
 
 	size_t hash() const {return _hash;}
 
+	bool owner() {return _memoryOwner;}
+
+	void deallocate()
+	{
+		delete[] _begin;
+	}
+
 	class Hash
 	{
 	public:
@@ -107,6 +119,13 @@ public:
 	};
 
 private:
+	void allocateAndCopy(const char* begin, const char* end)
+	{
+		size_t size = end - begin;
+		_begin = new char[sizeof(char)*size];
+		_end = _begin + size;
+		memcpy(const_cast<char*>(_begin), const_cast<char*>(begin), size);
+	}
 	void calchash()
 	{
 		size_t hash = 5381;
@@ -126,6 +145,7 @@ private:
 	const char* _end;
 	size_t _len;
 	size_t _hash;
+	bool	_memoryOwner;
 };
 
 
@@ -140,6 +160,8 @@ public:
 	void deallocate()
 	{
 		delete[] _begin;
+		_begin = nullptr;
+		_end = nullptr;
 	}
 
 private:
@@ -229,6 +251,7 @@ public:
 	virtual ~KmerCounter()
 	{
 		_chunk1.deallocate();
+		_crossing.deallocate();
 	}
 
 	virtual void process()
@@ -236,7 +259,7 @@ public:
 		count();
 	}
 
-	void extractProcessingResult(unordered_map<string, size_t>& database_)
+	void extractProcessingResult(unordered_map<Memory, size_t, Memory::Hash>& database_)
 	{
 		unsigned long long totalCount = 0;
 		int hashmapCount=0;
@@ -250,8 +273,14 @@ public:
 			const auto& pair = *it;
 			const Memory& mem = pair.first;
 			size_t count = pair.second;
-			string s = string(pair.first.begin(), pair.first.end() - pair.first.begin());
-			database_[s] = count;
+			Memory newMem = Memory(mem.begin(), mem.end(), true);
+			bool redundantAllocation = false;
+			if(database_.find(newMem)!=database_.end())
+				redundantAllocation = true;
+			database_[newMem]+=count;
+			if(redundantAllocation)
+				newMem.deallocate();
+
 		}
 
 		cout << "Took: " << _sw.stop() << endl;
@@ -288,7 +317,7 @@ protected:
 	{
 		for(const char* curr = chunk.begin(); curr+_k<=chunk.end(); curr++)
 		{
-			Memory mem(curr, curr+_k);
+			Memory mem(curr, curr+_k, false);
 			++_stringMap[mem];
 		}
 	}

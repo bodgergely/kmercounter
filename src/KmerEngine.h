@@ -10,6 +10,7 @@ using io::FileReader;
 using io::InputBuffer;
 using std::unique_ptr;
 using kmers::Chunk;
+using kmers::Memory;
 
 namespace kmers
 {
@@ -17,10 +18,9 @@ namespace kmers
 
 class KmerResultCollector
 {
-	using Pair = pair<string, size_t>;
+	using Pair = pair<Memory, size_t>;
 	using Result = vector<Pair>;
-	using ResultCollection = vector<Result>;
-	using HashMap = unordered_map<string, size_t>;
+	using HashMap = unordered_map<Memory, size_t, Memory::Hash>;
 
 public:
 	// n is the top most count strings
@@ -41,7 +41,7 @@ public:
 		_database.reserve(hc.maxLoadFactor);
 	}
 
-	unordered_map<string, size_t>& GlobalDataBase() {return _database;}
+	HashMap& GlobalDataBase() {return _database;}
 
 	vector<pair<string, size_t>> getResult()
 	{
@@ -56,8 +56,28 @@ public:
 		Result res;
 		extract(res, tmp, _n);
 
-		cout << "Number of strings: " << tmp.size();
-		return res;
+		//stringify results
+		vector<pair<string, size_t>> stringRes;
+		for(const auto& r : res)
+		{
+			const Memory& mem = r.first;
+			size_t count = r.second;
+			string s = string(mem.begin(), mem.end()-mem.begin());
+			stringRes.push_back(make_pair(s, count));
+		}
+
+		//deallocate Memory objects now
+		for(HashMap::iterator it=_database.begin();it!=_database.end();it++)
+		{
+			Memory mem = it->first;
+			if(mem.owner())
+				mem.deallocate();
+		}
+
+		_database.clear();
+
+		cout << "Number of strings: " << tmp.size() << endl;
+		return stringRes;
 	}
 
 private:
@@ -67,7 +87,6 @@ private:
 	size_t _n;
 	HashTableConfig _hc;
 	HashMap _database;
-	ResultCollection _results;
 };
 
 
