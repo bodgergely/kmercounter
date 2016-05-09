@@ -63,7 +63,7 @@ struct mer_encoded
 
 bool operator==(const mer_encoded& lhs, const mer_encoded& rhs)
 {
-	if(lhs == rhs)
+	if((lhs.high == rhs.high) && (lhs.low == lhs.low))
 		return true;
 	else
 		return false;
@@ -77,10 +77,9 @@ public:
 	size_t operator()(const mer_encoded& mer) const
 	{
 
-		return ((mer.low)%((int)pow(2,31))) + (mer.high);
+		return (unsigned int)((size_t)(mer.low) + (size_t)(mer.high));
 	}
 };
-
 mer_encoded encode(const char* s, size_t k)
 {
 	mer_encoded enc;
