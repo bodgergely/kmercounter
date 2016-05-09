@@ -6,18 +6,18 @@
  */
 
 #include <KmerEngine.h>
+#include <Mer.h>
 
 #include <iostream>
 #include <vector>
 #include <utility>
 #include <string>
 
-using kmers::KmerEngine;
+using namespace kmers;
 using namespace std;
 
 int main(int argc, char** argv)
 {
-
 	string file = string(argv[1]);
 	int n = atoi(argv[2]);
 	int k = atoi(argv[3]);
@@ -34,8 +34,8 @@ int main(int argc, char** argv)
 		cout << p.first << "," << p.second << endl;
 	}
 
-	cout << "Finished!\n";
 
+	cout << "Finished!\n";
 
 	return 0;
 }

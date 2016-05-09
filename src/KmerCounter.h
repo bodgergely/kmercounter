@@ -9,6 +9,7 @@
 #define KMERCOUNTER_H_
 
 #include <StopWatch.h>
+#include <Mer.h>
 
 #include <cstring>
 #include <string>
@@ -224,7 +225,7 @@ void extract(vector<pair<T, size_t>>& res, const vector<pair<T, size_t>>& from, 
  */
 class KmerCounter
 {
-	using HashMap = std::unordered_map<Memory, size_t, Memory::Hash>;
+	using HashMap = std::unordered_map<mer_encoded, size_t, mer_encoded_hash>;
 public:
 	KmerCounter(Chunk chunk, size_t k, size_t n, const HashTableConfig& config) :
 																			_chunk1(chunk),
@@ -259,7 +260,7 @@ public:
 		count();
 	}
 
-	void extractProcessingResult(unordered_map<Memory, size_t, Memory::Hash>& database_)
+	void extractProcessingResult(std::unordered_map<mer_encoded, size_t, mer_encoded_hash>& database_)
 	{
 		unsigned long long totalCount = 0;
 		int hashmapCount=0;
@@ -271,17 +272,9 @@ public:
 			hashmapCount++;
 			totalCount+=it->second;
 			const auto& pair = *it;
-			const Memory& mem = pair.first;
+			const mer_encoded& mem = pair.first;
 			size_t count = pair.second;
-			Memory newMem = Memory(mem.begin(), mem.end(), true);
-			bool redundantAllocation = false;
-			if(database_.find(newMem)!=database_.end())
-				redundantAllocation = true;
-			database_[newMem]+=count;
-			if(redundantAllocation)
-				newMem.deallocate();
-
-
+			database_[mem]+=count;
 		}
 
 		cout << "Took: " << _sw.stop() << endl;
@@ -318,8 +311,8 @@ protected:
 	{
 		for(const char* curr = chunk.begin(); curr+_k<=chunk.end(); curr++)
 		{
-			Memory mem(curr, curr+_k, false);
-			++_stringMap[mem];
+			mer_encoded mer = encode(curr, _k);
+			++_stringMap[mer];
 		}
 	}
 

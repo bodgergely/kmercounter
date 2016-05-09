@@ -18,17 +18,17 @@ namespace kmers
 
 class KmerResultCollector
 {
-	using Pair = pair<Memory, size_t>;
+	using Pair = pair<mer_encoded, size_t>;
 	using Result = vector<Pair>;
-	using HashMap = unordered_map<Memory, size_t, Memory::Hash>;
+	using HashMap = unordered_map<mer_encoded, size_t, mer_encoded_hash>;
 
 public:
 	// n is the top most count strings
-	KmerResultCollector(size_t n) : _n(n), _hc(0,0), _totalKmerCount(0)
+	KmerResultCollector(size_t n, size_t k) : _n(n), _k(k),_hc(0,0), _totalKmerCount(0)
 	{
 	}
 
-	KmerResultCollector(int n,  HashTableConfig hc) : _n(n), _hc(hc), _totalKmerCount(0)
+	KmerResultCollector(size_t n, size_t k,  HashTableConfig hc) : _n(n), _k(k), _hc(hc), _totalKmerCount(0)
 	{
 		_database.reserve(hc.initialSize);
 		_database.reserve(hc.maxLoadFactor);
@@ -62,19 +62,12 @@ public:
 		vector<pair<string, size_t>> stringRes;
 		for(const auto& r : res)
 		{
-			const Memory& mem = r.first;
+			const mer_encoded& mem = r.first;
 			size_t count = r.second;
-			string s = string(mem.begin(), mem.end()-mem.begin());
+			string s = decode(mem, _k);
 			stringRes.push_back(make_pair(s, count));
 		}
 
-		//deallocate Memory objects now
-		for(HashMap::iterator it=_database.begin();it!=_database.end();it++)
-		{
-			Memory mem = it->first;
-			if(mem.owner())
-				mem.deallocate();
-		}
 
 		_database.clear();
 
@@ -90,6 +83,7 @@ private:
 
 private:
 	size_t _n;
+	size_t _k;
 	unsigned long long _totalKmerCount;
 	HashTableConfig _hc;
 	HashMap _database;
@@ -107,7 +101,7 @@ public:
 																			 _maxThreadedCounters(threadCount),
 																			 _fileReader(filePath),
 																			 _finishedCounting(false),
-																			 _resultCollector(n)
+																			 _resultCollector(n, k)
 	{
 		size_t blksize = _fileReader.blocksize();
 		size_t  filesize = _fileReader.filesize();
