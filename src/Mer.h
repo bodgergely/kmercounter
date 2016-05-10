@@ -53,7 +53,7 @@ static char fromIndex(char index)
 
 
 /**
- * enncode the characters into this struct. Each char needs 3 bits (we have 5 possible chars) so we can have max of 96/3 = 32 long mers
+ * enncode the characters into this struct. Each char needs 3 bits (we have 5 possible chars) so we can have max of (64-1)/3 plus 32/3 = 31 long mers -the msf bit in the 64 bit field not used for simplicity
  */
 struct mer_encoded
 {
