@@ -11,6 +11,7 @@
 #include <string>
 #include <stdexcept>
 #include <cmath>
+#include <cstring>
 
 using std::string;
 
@@ -83,6 +84,7 @@ public:
 mer_encoded encode(const char* s, size_t k)
 {
 	mer_encoded enc;
+	memset(&enc, 0, sizeof(enc));
 	uint64_t& v = enc.low;
 	v = 0;
 	int i = 0;
