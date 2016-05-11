@@ -1,6 +1,6 @@
 IDIR =.
 CC=g++
-CFLAGS=-I$(IDIR) -O2 -DDEBUG -pthread -g --std=c++11
+CFLAGS=-I$(IDIR) -O2 -DDEBUG -D_TESTING -pthread -g --std=c++11
 
 ODIR=../obj
 

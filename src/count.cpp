@@ -8,6 +8,10 @@
 #include <KmerEngine.h>
 #include <Mer.h>
 
+#ifdef _TESTING
+#include <TestingKmer.h>
+#endif
+
 #include <iostream>
 #include <vector>
 #include <utility>
@@ -33,9 +37,19 @@ int main(int argc, char** argv)
 	{
 		cout << p.first << "," << p.second << endl;
 	}
-
-
 	cout << "Finished!\n";
+
+#ifdef _TESTING
+	TestingKmer tester(file);
+	tester.count(n, k);
+	bool pass = tester.compare(results);
+
+	if(pass)
+		cout << "Test passed!\n";
+	else
+		cout << "Test failed!\n";
+#endif
+
 
 	return 0;
 }
