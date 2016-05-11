@@ -71,7 +71,7 @@ public:
 
 		_database.clear();
 
-		cout << "Number of strings: " << tmp.size() << endl;
+		//cout << "Number of strings: " << tmp.size() << endl;
 
 		return stringRes;
 	}
@@ -155,9 +155,9 @@ public:
 		if(_result.empty())
 		{
 			_result = _resultCollector.getResult();
-			cout << "Number of counters created: " << _numOfCountersCreated << endl;
+			//cout << "Number of counters created: " << _numOfCountersCreated << endl;
 			auto totalkmers = _resultCollector.totalKmerCount();
-			cout << "Total kmers: " << totalkmers << "Expected: " <<  _fileReader.filesize()-_k+1 << endl;
+			//cout << "Total kmers: " << totalkmers << "Expected: " <<  _fileReader.filesize()-_k+1 << endl;
 			assert(totalkmers == _fileReader.filesize()-_k+1);
 		}
 		return _result;

@@ -286,10 +286,10 @@ public:
 			database_[mem]+=count;
 		}
 
-		cout << "Took: " << _sw.stop() << endl;
-		printf("total count: %d and totalLen: %d and %d\n", totalCount, _totalLen, (int)_totalLen-(int)_k+1);
+		//cout << "Took: " << _sw.stop() << endl;
+		//printf("total count: %d and totalLen: %d and %d\n", totalCount, _totalLen, (int)_totalLen-(int)_k+1);
 		assert(totalCount == std::max((int)_totalLen-(int)_k+1,0));
-		cout << "hashmap count: " << hashmapCount << "\n";
+		//cout << "hashmap count: " << hashmapCount << "\n";
 
 	}
 
