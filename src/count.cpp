@@ -21,7 +21,7 @@ int main(int argc, char** argv)
 	string file = string(argv[1]);
 	int n = atoi(argv[2]);
 	int k = atoi(argv[3]);
-	int threadCount = 1;
+	int threadCount = 4;
 
 	KmerEngine engine(file, k, n, threadCount);
 	engine.start();

@@ -99,7 +99,7 @@ public:
 																			 _n(n),
 																			 _numOfCountersCreated(0),
 																			 _maxThreadedCounters(threadCount),
-																			 _fileReader(filePath, 5),
+																			 _fileReader(filePath),
 																			 _finishedCounting(false),
 																			 _resultCollector(n, k)
 	{
@@ -136,14 +136,14 @@ public:
 			else
 				createCounter(buffer);
 
-			_prevBuffer = buffer;
 			// if last section then we have to deal with it now
-			if(buffer.isEndofStream())
+			if(_prevBuffer.getBuffer()!=nullptr && buffer.isEndofStream())
 			{
 				// need to do this so we will process just one buffer inside createCounter
 				_prevBuffer.setBuffer(nullptr);
 				createCounter(buffer);
 			}
+			_prevBuffer = buffer;
 		}
 		_finishedCounting.store(true);
 
