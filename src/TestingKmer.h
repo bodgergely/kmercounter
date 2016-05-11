@@ -58,7 +58,10 @@ private:
 	bool _compare(vector<pair<string, size_t>> other)
 	{
 		if(other.size()!=_results.size())
-							return false;
+		{
+			cout << "Number of elems in prod: " << other.size() << " vs " << _results.size() << endl;
+			return false;
+		}
 
 		std::sort(other.begin(), other.end(), [](const pair<string, size_t>& lhs, const pair<string, size_t>& rhs)
 				{
@@ -81,11 +84,21 @@ private:
 		{
 			auto& o = other[i];
 			auto& m = _results[i];
-			if(o.first!=m.first && o.second!=m.second)
+			if(!(o.first==m.first && o.second==m.second))
 			{
+				cout << "Failed for: " << o.first << "," << o.second << " vs " << m.first << "," << m.second << endl;
 				return false;
 			}
 		}
+
+		std::sort(_results.begin(), _results.end(), [](const pair<string, size_t>& lhs, const pair<string, size_t>& rhs)
+								{
+									if(lhs.second > rhs.second)
+										return true;
+									else
+										return false;
+								});
+
 
 		return true;
 

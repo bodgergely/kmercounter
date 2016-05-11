@@ -32,11 +32,11 @@ int main(int argc, char** argv)
 	vector<pair<string, size_t>> results = engine.getResults();
 	unsigned long long totalkmerCount = engine.totalKmerCount();
 
-
+/*
 	for(const auto& p : results)
 	{
 		cout << p.first << "," << p.second << endl;
-	}
+	}*/
 	cout << "Finished!\n";
 
 #ifdef _TESTING
@@ -44,14 +44,14 @@ int main(int argc, char** argv)
 	tester.count(n, k);
 	bool pass = tester.compare(results);
 
-	vector<pair<string, size_t>> testresults = tester.getResults();
-	cout << "test results:\n";
-	for(const auto& p : results)
+	//vector<pair<string, size_t>> testresults = tester.getResults();
+	/*cout << "test results:\n";
+	for(const auto& p : testresults)
 	{
 		cout << p.first << "," << p.second << endl;
 	}
 	cout << "\n";
-
+*/
 	if(pass)
 		cout << "Test passed!\n";
 	else
