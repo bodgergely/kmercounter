@@ -35,6 +35,7 @@ public:
 	}
 	
 	inline char* getBuffer() const {return _buffer;}
+	inline void  setBuffer(char* ptr) {_buffer = ptr;}
 	inline size_t 	   getLen()	const {return _len;}
 	inline void		   setLen(size_t len) {_len = len;}
 	inline size_t	   getAllocSize() const {return _allocated;}

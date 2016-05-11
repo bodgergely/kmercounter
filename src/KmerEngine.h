@@ -99,7 +99,7 @@ public:
 																			 _n(n),
 																			 _numOfCountersCreated(0),
 																			 _maxThreadedCounters(threadCount),
-																			 _fileReader(filePath),
+																			 _fileReader(filePath, 5),
 																			 _finishedCounting(false),
 																			 _resultCollector(n, k)
 	{
@@ -137,6 +137,13 @@ public:
 				createCounter(buffer);
 
 			_prevBuffer = buffer;
+			// if last section then we have to deal with it now
+			if(buffer.isEndofStream())
+			{
+				// need to do this so we will process just one buffer inside createCounter
+				_prevBuffer.setBuffer(nullptr);
+				createCounter(buffer);
+			}
 		}
 		_finishedCounting.store(true);
 
@@ -150,7 +157,7 @@ public:
 			_result = _resultCollector.getResult();
 			cout << "Number of counters created: " << _numOfCountersCreated << endl;
 			auto totalkmers = _resultCollector.totalKmerCount();
-			cout << "Total kmers: " << totalkmers << "Expected: " <<  _fileReader.filesize()-_k+1;
+			cout << "Total kmers: " << totalkmers << "Expected: " <<  _fileReader.filesize()-_k+1 << endl;
 			assert(totalkmers == _fileReader.filesize()-_k+1);
 		}
 		return _result;

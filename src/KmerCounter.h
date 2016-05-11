@@ -157,6 +157,7 @@ public:
 	Chunk(const char* begin, const char* end) : _begin(begin), _end(end) {}
 	const char* begin() const {return _begin;}
 	const char* end() const {return _end;}
+	size_t	    size() const {return _end-_begin;}
 
 	void deallocate()
 	{
@@ -179,12 +180,17 @@ private:
 	 */
 Chunk createCrossMemorySection(const Chunk& chunk1, const Chunk& chunk2, int k)
 {
-	char* mem = new char[ k-1 + k-1];		// the crossing section has k-1 elements from both chunks
-	const char* start = chunk1.end() - k + 1;
-	memcpy(mem, start, k-1);		// copy the remainder from the first chunk
-	memcpy(mem+k-1, chunk2.begin(), k-1); // copy the first k-1 from the second chunk
+	int num1 = k-1;
+	int num2 = k-1;
+	if(num2 > chunk2.size())
+		num2 = chunk2.size();
 
-	return Chunk(mem, mem+2*(k-1));
+	char* mem = new char[ num1 + num2];		// the crossing section has k-1 elements from both chunks
+	const char* start = chunk1.end() - k + 1;
+	memcpy(mem, start, num1);		// copy the remainder from the first chunk
+	memcpy(mem+num1, chunk2.begin(), num2); // copy from the second chunk
+
+	return Chunk(mem, mem+num1+num2);
 
 }
 
@@ -241,11 +247,14 @@ public:
 	KmerCounter(Chunk chunk1, Chunk chunk2, size_t k, size_t n, const HashTableConfig& config) : _chunk1(chunk1),
 																								 _chunk2(chunk2),
 																								 _hasTwoChunks(true),
-																								 _totalLen(chunk1.end()-chunk1.begin() + k-1),
 																								 _k(k),
 																								 _n(n),
 																								 _hashConfig(config)
 	{
+		int secondpartSize = k-1;
+		if(secondpartSize > chunk2.size())
+			secondpartSize = chunk2.size();
+		_totalLen = chunk1.size() + secondpartSize;
 		init();
 	}
 
@@ -278,7 +287,8 @@ public:
 		}
 
 		cout << "Took: " << _sw.stop() << endl;
-		assert(totalCount == _totalLen-_k+1);
+		printf("total count: %d and totalLen: %d and %d\n", totalCount, _totalLen, (int)_totalLen-(int)_k+1);
+		assert(totalCount == std::max((int)_totalLen-(int)_k+1,0));
 		cout << "hashmap count: " << hashmapCount << "\n";
 
 	}
@@ -297,6 +307,7 @@ protected:
 			countInChunk(_chunk1);
 			// deal with the crossing into the second chunk -- this is tricky (and annoying) - since k is assumed to be much smaller than the chunk size: need to create contiguous memory from the two (malloc? then free later)
 			// we own! chunk! will have to free later (when is later? once we created the strings from under these raw char pointers -> then we can get rid of the memory)
+			// the last chunk (_chunk2) might not even have _k elems!
 			_crossing = createCrossMemorySection(_chunk1, _chunk2, _k);
 			countInChunk(_crossing);
 		}
