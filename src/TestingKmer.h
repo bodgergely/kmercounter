@@ -22,26 +22,26 @@ public:
 	{
 		_f >> _input;
 	}
-	vector<string, size_t> count(int n, int k)
+	void count(int n, int k)
 	{
-		return _count(_input, n, k);
+		_count(_input, n, k);
 	}
 
 	vector<pair<string, size_t>> getResults() const {return _results;}
 
 	bool compare(const vector<pair<string, size_t>>& other)
 	{
-		return _compare();
+		return _compare(other);
 	}
 
 private:
 	void _count(string input, int n, int k)
 	{
-		size_t len = input;
+		size_t len = input.size();
 		unordered_map<string, size_t> map;
 		for(int i=0;i<len-k+1;i++)
 		{
-			string s = string(input+i, k);
+			string s = input.substr(i, k);
 			map[s]+=1;
 		}
 
@@ -55,19 +55,19 @@ private:
 
 	}
 
-	bool _compare(const vector<pair<string, size_t>>& other)
+	bool _compare(vector<pair<string, size_t>> other)
 	{
 		if(other.size()!=_results.size())
 							return false;
 
-		std::sort(other.begin(), other.end(), [](const pair<const string, size_t>& lhs, const pair<const string, size_t>& rhs)
+		std::sort(other.begin(), other.end(), [](const pair<string, size_t>& lhs, const pair<string, size_t>& rhs)
 				{
 					if(lhs.first < rhs.first)
 						return true;
 					else
 						return false;
 				});
-		std::sort(_results.begin(), _results.end(), [](const pair<const string, size_t>& lhs, const pair<const string, size_t>& rhs)
+		std::sort(_results.begin(), _results.end(), [](const pair<string, size_t>& lhs, const pair<string, size_t>& rhs)
 						{
 							if(lhs.first < rhs.first)
 								return true;
