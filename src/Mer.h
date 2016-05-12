@@ -77,9 +77,34 @@ class mer_encoded_hash
 public:
 	size_t operator()(const mer_encoded& mer) const
 	{
-
+		/*
+		uint64_t l = integerHash(mer.low);
+		uint32_t h = integerHash(mer.high);
+		return l * (uint64_t)h;
+		*/
 		return (unsigned int)((size_t)(mer.low) + (size_t)(mer.high));
 	}
+private:
+	inline uint32_t integerHash(uint32_t h) const
+	{
+	    h ^= h >> 16;
+	    h *= 0x85ebca6b;
+	    h ^= h >> 13;
+	    h *= 0xc2b2ae35;
+	    h ^= h >> 16;
+	    return h;
+	}
+
+	inline uint64_t integerHash(uint64_t h) const
+	{
+		h ^= h >> 32;
+		h *= 0x85ebca6b85ebca6b;
+		h ^= h >> 26;
+		h *= 0xc2b2ae35c2b2ae35;
+		h ^= h >> 32;
+		return h;
+	}
+
 };
 mer_encoded encode(const char* s, size_t k)
 {
