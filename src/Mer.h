@@ -64,7 +64,7 @@ struct mer_encoded
 
 bool operator==(const mer_encoded& lhs, const mer_encoded& rhs)
 {
-	if((lhs.high == rhs.high) && (lhs.low == lhs.low))
+	if( !memcmp(&(lhs.low), &(rhs.low), sizeof(uint64_t)) && !memcmp(&(lhs.high), &(rhs.high), sizeof(uint32_t)) )
 		return true;
 	else
 		return false;
