@@ -12,17 +12,23 @@
 
 using std::string;
 
-// abstract
 class Encoded
 {
 public:
-	Encoded();
-	virtual ~Encoded() = 0;
+	Encoded(char* buffer, size_t size) : _memory(buffer), _size(size) {}
+	~Encoded()
+	{
+		delete[] _memory;
+	}
+
+	const char* getBuffer() const { return _memory;}
+	size_t      getSize() const {return _size;}
+protected:
+	char* _memory;
+	size_t _size;
+
 };
 
-Encoded::~Encoded()
-{
-}
 
 class Serializable
 {
@@ -34,22 +40,6 @@ public:
 };
 
 
-class Serializer
-{
-public:
-	Serializer(Serializable& obj) : _obj(obj) {}
-	virtual ~Serializer() {}
-	void write()
-	{
-		Encoded enc = _obj.serialize();
-		_strat.write(enc);
-	}
-	void read(T& res)
-	{
-		_strat.read(enc);
-		_obj.read(res);
-	}
-};
 
 
 

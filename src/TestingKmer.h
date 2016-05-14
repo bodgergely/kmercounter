@@ -57,9 +57,9 @@ private:
 
 	bool _compare(vector<pair<string, size_t>> other)
 	{
+		cout << "Number of elems in prod: " << other.size() << " vs " << _results.size() << endl;
 		if(other.size()!=_results.size())
 		{
-			cout << "Number of elems in prod: " << other.size() << " vs " << _results.size() << endl;
 			return false;
 		}
 
