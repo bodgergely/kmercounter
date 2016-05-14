@@ -15,6 +15,9 @@
 using std::ofstream;
 using std::ifstream;
 
+namespace serialization
+{
+
 struct SerializationInfo
 {
 	SerializationInfo(string filename_, size_t byteCount_) : filename(filename_), byteCount(byteCount_){}
@@ -45,6 +48,7 @@ public:
 		if(remainder)
 			f.write(from + j*blockSize, remainder);
 
+		f.close();
 		return SerializationInfo(filename, totalSize);
 
 	}
@@ -67,10 +71,11 @@ public:
 		if(remainder)
 			f.read(buff + j*blockSize, remainder);
 
+		f.close();
 		obj.deserialize(Encoded(buff, totalSize));
-
 	}
 };
 
+}
 
 #endif /* FILESERIALIZER_H_ */

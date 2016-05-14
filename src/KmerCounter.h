@@ -10,6 +10,7 @@
 
 #include <StopWatch.h>
 #include <Mer.h>
+#include <MerMap.h>
 
 #include <cstring>
 #include <string>
@@ -269,7 +270,7 @@ public:
 		count();
 	}
 
-	void extractProcessingResult(std::unordered_map<mer_encoded, size_t, mer_encoded_hash>& database_)
+	void extractProcessingResult(MerMap& database_)
 	{
 		unsigned long long totalCount = 0;
 		int hashmapCount=0;

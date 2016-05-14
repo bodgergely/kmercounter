@@ -58,9 +58,25 @@ static char fromIndex(char index)
  */
 struct mer_encoded
 {
+	mer_encoded() : low(0), high(0) {}
+	inline mer_encoded(const mer_encoded& other);
+	inline mer_encoded& operator=(const mer_encoded& rhs);
 	uint32_t high;
 	uint64_t low;
 };
+
+mer_encoded::mer_encoded(const mer_encoded& other)
+{
+	memcpy(reinterpret_cast<char*>(&(this->low)), reinterpret_cast<const char*>(&(other.low)), sizeof(uint64_t));
+	memcpy(reinterpret_cast<char*>(&(this->high)), reinterpret_cast<const char*>(&(other.high)), sizeof(uint32_t));
+}
+
+mer_encoded& mer_encoded::operator=(const mer_encoded& other)
+{
+	memcpy(reinterpret_cast<char*>(&low), reinterpret_cast<const char*>(&(other.low)), sizeof(uint64_t));
+	memcpy(reinterpret_cast<char*>(&high), reinterpret_cast<const char*>(&(other.high)), sizeof(uint32_t));
+	return *this;
+}
 
 bool operator==(const mer_encoded& lhs, const mer_encoded& rhs)
 {

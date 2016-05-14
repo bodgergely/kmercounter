@@ -12,6 +12,9 @@
 
 using std::string;
 
+namespace serialization
+{
+
 class Encoded
 {
 public:
@@ -35,11 +38,11 @@ class Serializable
 public:
 	Serializable() {}
 	virtual ~Serializable(){}
-	Encoded serialize() = 0;
-	void deserialize(const Encoded& enc) = 0;
+	virtual Encoded serialize() const = 0;
+	virtual void deserialize(const Encoded& enc) = 0;
 };
 
-
+}
 
 
 

@@ -2,15 +2,22 @@
 #define KMERENGINE_H_
 
 #include <KmerCounter.h>
+#include <MerMap.h>
+#include <FileSerializer.h>
 #include <FileIO.h>
 #include <memory>
 #include <cmath>
+#include <cstdlib>
 
 using io::FileReader;
 using io::InputBuffer;
 using std::unique_ptr;
 using kmers::Chunk;
 using kmers::Memory;
+
+using serialization::Encoded;
+using serialization::FileSerializer;
+using serialization::SerializationInfo;
 
 namespace kmers
 {
@@ -20,7 +27,6 @@ class KmerResultCollector
 {
 	using Pair = pair<mer_encoded, size_t>;
 	using Result = vector<Pair>;
-	using HashMap = unordered_map<mer_encoded, size_t, mer_encoded_hash>;
 
 public:
 	// n is the top most count strings
@@ -42,14 +48,14 @@ public:
 	}
 
 
-	HashMap& GlobalDataBase() {return _database;}
+	MerMap& GlobalDataBase() {return _database;}
 
 	vector<pair<string, size_t>> getResult()
 	{
 		// combine the results
 
 		Result tmp;
-		for(HashMap::const_iterator it=_database.begin();it!=_database.end();it++)
+		for(MerMap::const_iterator it=_database.begin();it!=_database.end();it++)
 		{
 			tmp.push_back(*it);
 			_totalKmerCount+=it->second;
@@ -86,7 +92,7 @@ private:
 	size_t _k;
 	unsigned long long _totalKmerCount;
 	HashTableConfig _hc;
-	HashMap _database;
+	MerMap _database;
 };
 
 
@@ -234,8 +240,20 @@ private:
 
 	void populateTopStrings(const KmerCounterThreadedPtr& kc)
 	{
+		if(_resultCollector.GlobalDataBase().size() > 1000000)
+		{
+			char buff[512] = {0};
+			sprintf(buff, "map_%lu", _serializationInfos.size());
+			SerializationInfo si = FileSerializer::write(_resultCollector.GlobalDataBase(), buff);
+			_serializationInfos.push_back(si);
+
+			_resultCollector.GlobalDataBase().clear();
+		}
+
+
 		kc->extractProcessingResult(_resultCollector.GlobalDataBase());
 	}
+
 
 
 
@@ -255,6 +273,7 @@ private:
 	KmerResultCollector			 _resultCollector;
 	vector<pair<string, size_t>> _result;
 	InputBuffer					 _prevBuffer;
+	vector<SerializationInfo>    _serializationInfos;
 };
 
 
