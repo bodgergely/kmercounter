@@ -13,10 +13,13 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <iostream>
+#include <cassert>
 
 using std::unordered_set;
 using std::vector;
 
+using std::cout;
 using serialization::Serializable;
 using serialization::Encoded;
 
@@ -39,7 +42,7 @@ class MerMap : public Serializable
 	using HashMap = unordered_map<mer_encoded, size_t, mer_encoded_hash>;
 public:
 	using const_iterator = HashMap::const_iterator;
-	MerMap() {}
+	MerMap(size_t k) : _k(k){}
 	~MerMap() {}
 
 	// unordered_map interface
@@ -72,14 +75,20 @@ public:
 	void deserialize(const Encoded& enc)
 	{
 		mer_count* mers = (mer_count*)(enc.getBuffer());
-		size_t count = enc.getSize();
+		size_t bytes = enc.getSize();
+		size_t count = bytes / sizeof(mer_count);
+		assert((bytes % sizeof(mer_count)) == 0);
 
 		for(int i=0;i<count;i++)
 		{
+			//cout << decode(mers[i].mer, _k) << std::endl;
 			_merCountList.push_back(mers[i]);
 		}
 
-		delete[] mers;
+		//cout << "Count: " << count << "\n";
+
+		_deserialized = true;
+
 	}
 
 
@@ -87,10 +96,21 @@ public:
 	size_t totalCount()
 	{
 		size_t tc = 0;
-		for(MerMap::const_iterator it=_map.begin();it!=_map.end();it++)
+		if(_deserialized)
 		{
-			tc+=it->second;
+			for(const auto& m : _merCountList)
+			{
+				tc+=m.count;
+			}
 		}
+		else
+		{
+			for(MerMap::const_iterator it=_map.begin();it!=_map.end();it++)
+			{
+				tc+=it->second;
+			}
+		}
+
 		return tc;
 	}
 
@@ -99,13 +119,25 @@ public:
 	 */
 	vector<mer_count> extract(size_t n)
 	{
+		vector<mer_count>* from = nullptr;
+		if(_deserialized)
+			from = &_merCountList;
+		else
+		{
+			from = new vector<mer_count>();
+			for(const auto& p : _map)
+			{
+				from->push_back(mer_count(p.first, p.second));
+			}
+		}
+
 		vector<mer_count> res;
 		int count = 0;
 		size_t limitSize = std::numeric_limits<size_t>::max();
 		while(count < n)
 		{
 			size_t biggest = 0;
-			for(const auto& p : _merCountList)
+			for(const auto& p : *from)
 			{
 				if(p.count > biggest && p.count < limitSize)
 					biggest = p.count;
@@ -113,7 +145,7 @@ public:
 			count++;
 			limitSize = biggest;
 			// second pass -> populate the res array with the biggest sizes
-			for(const auto& p : _merCountList)
+			for(const auto& p : *from)
 			{
 				if(p.count == biggest)
 				{
@@ -128,18 +160,34 @@ public:
 
 	vector<mer_count> extract(unordered_set<mer_encoded, mer_encoded_hash> mers)
 	{
+		vector<mer_count>* from = nullptr;
+		if(_deserialized)
+			from = &_merCountList;
+		else
+		{
+			from = new vector<mer_count>();
+			for(const auto& p : _map)
+			{
+				from->push_back(mer_count(p.first, p.second));
+			}
+		}
+
 		vector<mer_count> res;
-		for(const auto& p : _merCountList)
+		for(const auto& p : *from)
 		{
 			if(mers.find(p.mer)!=mers.end())
 				res.push_back(p);
 		}
+
+		return res;
 	}
 
 
 private:
 	HashMap _map;
 	vector<mer_count> _merCountList;
+	bool _deserialized = false;
+	size_t _k;
 };
 
 
