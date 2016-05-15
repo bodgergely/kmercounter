@@ -8,12 +8,15 @@
 #include <memory>
 #include <cmath>
 #include <cstdlib>
+#include <cstdio>
 
 using io::FileReader;
 using io::InputBuffer;
 using std::unique_ptr;
 using kmers::Chunk;
 using kmers::Memory;
+
+using std::unordered_set;
 
 using serialization::Encoded;
 using serialization::FileSerializer;
@@ -25,8 +28,7 @@ namespace kmers
 
 class KmerResultCollector
 {
-	using Pair = pair<mer_encoded, size_t>;
-	using Result = vector<Pair>;
+	using Result = vector<mer_count>;
 
 public:
 	// n is the top most count strings
@@ -50,26 +52,50 @@ public:
 
 	MerMap& GlobalDataBase() {return _database;}
 
-	vector<pair<string, size_t>> getResult()
+	vector<pair<string, size_t>> getResult(const vector<SerializationInfo>&  serializationInfos)
 	{
 		// combine the results
-
-		Result tmp;
-		for(MerMap::const_iterator it=_database.begin();it!=_database.end();it++)
+		vector<Result> results;
+		for(int i=0;i<serializationInfos.size();i++)
 		{
-			tmp.push_back(*it);
-			_totalKmerCount+=it->second;
+			const SerializationInfo& si = serializationInfos[i];
+			MerMap mermap;
+			FileSerializer::read(mermap, si);
+			_totalKmerCount += mermap.totalCount();
+			Result res = mermap.extract(_n);
+			results.push_back(res);
 		}
-		// sort or use brute force extraction? using brute force now
-		Result res;
-		extract(res, tmp, _n);
+
+		// identify all strings
+		unordered_set<mer_encoded, mer_encoded_hash> needToLookAtSet;
+		for(const Result& res : results)
+		{
+			for(const mer_count& m : res)
+			needToLookAtSet.insert(m.mer);
+		}
+
+		// second pass - gather from the files all the needToLookAtSet strings
+		MerMap unifiedMap;
+		for(int i=0;i<serializationInfos.size();i++)
+		{
+			const SerializationInfo& si = serializationInfos[i];
+			MerMap mermap;
+			FileSerializer::read(mermap, si);
+			Result res = mermap.extract(needToLookAtSet);
+			for(const mer_count& m : res)
+			{
+				unifiedMap[m.mer]+=m.count;
+			}
+		}
+
+		Result final = unifiedMap.extract(_n);
 
 		//stringify results
 		vector<pair<string, size_t>> stringRes;
-		for(const auto& r : res)
+		for(const auto& r : final)
 		{
-			const mer_encoded& mem = r.first;
-			size_t count = r.second;
+			const mer_encoded& mem = r.mer;
+			size_t count = r.count;
 			string s = decode(mem, _k);
 			stringRes.push_back(make_pair(s, count));
 		}
@@ -160,7 +186,8 @@ public:
 	{
 		if(_result.empty())
 		{
-			_result = _resultCollector.getResult();
+			_result = _resultCollector.getResult(_serializationInfos);
+			deleteSerializedFiles();
 			//cout << "Number of counters created: " << _numOfCountersCreated << endl;
 			auto totalkmers = _resultCollector.totalKmerCount();
 			//cout << "Total kmers: " << totalkmers << "Expected: " <<  _fileReader.filesize()-_k+1 << endl;
@@ -254,7 +281,13 @@ private:
 		kc->extractProcessingResult(_resultCollector.GlobalDataBase());
 	}
 
-
+	void deleteSerializedFiles()
+	{
+		for(const auto& si : _serializationInfos)
+		{
+			std::remove(si.filename.c_str());
+		}
+	}
 
 
 private:
