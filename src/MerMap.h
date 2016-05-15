@@ -36,6 +36,18 @@ struct mer_count
 	size_t	    count;
 };
 
+struct merstring_count
+{
+	merstring_count() : count(0){}
+	merstring_count(const mer_encoded& m, size_t c, size_t k) : count(c)
+	{
+		mer = decode(m, k);
+	}
+	merstring_count(const string& mer_, size_t c) : mer(mer_), count(c) {}
+	string 		mer;
+	size_t	    count;
+};
+
 
 class MerMap : public Serializable
 {
@@ -49,7 +61,7 @@ public:
 	inline void reserve(size_t s) {_map.reserve(s);}
 	inline HashMap::const_iterator begin() const {return _map.begin();}
 	inline HashMap::const_iterator end() const {return _map.end();}
-	inline void					   clear() {_map.clear();}
+	inline void					   clear() {_map.clear();_map.reserve(0);_merCountList.clear();_merCountList.reserve(0);}
 	inline size_t				   size() {return _map.size();}
 	size_t& operator[](const mer_encoded& key)
 	{

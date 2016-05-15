@@ -55,6 +55,7 @@ public:
 	vector<pair<string, size_t>> getResult(const vector<SerializationInfo>&  serializationInfos)
 	{
 		// combine the results
+		cout << "Combining results...\n";
 		vector<Result> results;
 		for(int i=0;i<serializationInfos.size();i++)
 		{
@@ -64,6 +65,7 @@ public:
 			_totalKmerCount += mermap.totalCount();
 			Result res = mermap.extract(_n);
 			results.push_back(res);
+			mermap.clear();
 		}
 
 		// we need to take care of what we have not persisted
@@ -71,15 +73,21 @@ public:
 		_totalKmerCount+=_database.totalCount();
 
 		// identify all strings
+		cout << "Starting to populate the needToLookAtSet" << endl;
 		unordered_set<mer_encoded, mer_encoded_hash> needToLookAtSet;
-		for(const Result& res : results)
+		for(Result& res : results)
 		{
 			for(const mer_count& m : res)
 			{
 				needToLookAtSet.insert(m.mer);
 			}
+			// memory deallocation
+			res.clear();
+			res.reserve(0);
 		}
-
+		cout << "needToLookAtSet size: " << needToLookAtSet.size() << endl;
+		results.clear();
+		results.reserve(0);
 		// DEBUG
 		/*
 		for(const mer_encoded& m : needToLookAtSet)
@@ -90,6 +98,7 @@ public:
 		///
 
 		// second pass - gather from the files all the needToLookAtSet strings
+		cout << "Second pass\n";
 		MerMap unifiedMap(_k);
 		for(int i=0;i<serializationInfos.size();i++)
 		{
@@ -101,6 +110,8 @@ public:
 			{
 				unifiedMap[m.mer]+=m.count;
 			}
+			res.clear(); res.reserve(0);
+			mermap.clear();
 		}
 
 		Result res = _database.extract(needToLookAtSet);
@@ -108,10 +119,22 @@ public:
 		{
 			unifiedMap[m.mer]+=m.count;
 		}
+		res.clear(); res.reserve(0);
 
+		needToLookAtSet.clear();
+		needToLookAtSet.reserve(0);
+		cout << "Second pass done\n";
+		cout << "Extracing final results...\n";
 		Result final = unifiedMap.extract(_n);
+		cout << "Final size: " << final.size() << endl;
+		cout << "Extracted final results\n";
+
+		cout << "Unified map size: " << unifiedMap.size() << endl;
+		unifiedMap.clear();
+		unifiedMap.reserve(0);
 
 		//stringify results
+		cout << "Stringifying final results...\n";
 		vector<pair<string, size_t>> stringRes;
 		for(const auto& r : final)
 		{
@@ -120,9 +143,11 @@ public:
 			string s = decode(mem, _k);
 			stringRes.push_back(make_pair(s, count));
 		}
-
+		final.clear(); final.reserve(0);
+		cout << "Final results are in string form.\n";
 
 		_database.clear();
+		_database.reserve(0);
 
 		//cout << "Number of strings: " << tmp.size() << endl;
 
@@ -211,7 +236,7 @@ public:
 			deleteSerializedFiles();
 			//cout << "Number of counters created: " << _numOfCountersCreated << endl;
 			auto totalkmers = _resultCollector.totalKmerCount();
-			cout << "Total kmers: " << totalkmers << "Expected: " <<  _fileReader.filesize()-_k+1 << endl;
+			cout << "Total kmers: " << totalkmers << " Expected: " <<  _fileReader.filesize()-_k+1 << endl;
 			//assert(totalkmers == _fileReader.filesize()-_k+1);
 		}
 		return _result;
